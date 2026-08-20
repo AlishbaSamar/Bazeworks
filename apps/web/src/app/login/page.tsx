@@ -9,11 +9,10 @@ import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
 import { OAuthButton } from "@/components/ui/OAuthButton";
 import { GoogleIcon, GithubIcon } from "@/components/icons/ProviderIcons";
-import { useAuth, ApiError } from "@/lib/auth-context";
+import { authClient } from "@/lib/auth-client";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,14 +23,13 @@ export default function LoginPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    try {
-      await login(email, password);
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const { error: signInError } = await authClient.signIn.email({ email, password });
+    setLoading(false);
+    if (signInError) {
+      setError(signInError.message ?? "Something went wrong. Please try again.");
+      return;
     }
+    router.push("/dashboard");
   }
 
   return (

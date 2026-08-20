@@ -4,25 +4,27 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
-import { useAuth } from "@/lib/auth-context";
+import { authClient, useSession } from "@/lib/auth-client";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, status, logout } = useAuth();
+  const { data: session, isPending } = useSession();
 
   useEffect(() => {
-    if (status === "unauthenticated") {
+    if (!isPending && !session) {
       router.replace("/login");
     }
-  }, [status, router]);
+  }, [isPending, session, router]);
 
-  if (status !== "authenticated" || !user) {
+  if (isPending || !session) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Loading…</p>
       </div>
     );
   }
+
+  const { user } = session;
 
   return (
     <div className="min-h-screen bg-background">
@@ -37,7 +39,7 @@ export default function DashboardPage() {
           variant="secondary"
           className="w-auto px-4"
           onClick={async () => {
-            await logout();
+            await authClient.signOut();
             router.push("/login");
           }}
         >
@@ -47,7 +49,7 @@ export default function DashboardPage() {
 
       <main className="mx-auto max-w-3xl px-6 py-10">
         <h1 className="text-2xl font-semibold text-foreground">
-          Good to see you, {user.fullName.split(" ")[0]}
+          Good to see you, {user.name.split(" ")[0]}
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
 

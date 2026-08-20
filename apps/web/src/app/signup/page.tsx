@@ -2,7 +2,6 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { AuthCard } from "@/components/ui/AuthCard";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
@@ -11,12 +10,10 @@ import { FormBanner } from "@/components/ui/FormBanner";
 import { OAuthButton } from "@/components/ui/OAuthButton";
 import { GoogleIcon, GithubIcon } from "@/components/icons/ProviderIcons";
 import { PasswordStrengthMeter, scorePassword } from "@/components/ui/PasswordStrengthMeter";
-import { useAuth, ApiError } from "@/lib/auth-context";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignupPage() {
-  const router = useRouter();
-  const { signup } = useAuth();
-  const [fullName, setFullName] = useState("");
+  const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -24,6 +21,7 @@ export default function SignupPage() {
   const [error, setError] = useState<string | null>(null);
   const [termsError, setTermsError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -40,14 +38,31 @@ export default function SignupPage() {
     }
 
     setLoading(true);
-    try {
-      await signup(fullName, email, password);
-      router.push("/dashboard");
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const { error: signUpError } = await authClient.signUp.email({
+      email,
+      password,
+      name,
+      callbackURL: `${window.location.origin}/verify-email`,
+    });
+    setLoading(false);
+
+    if (signUpError) {
+      setError(signUpError.message ?? "Something went wrong. Please try again.");
+      return;
     }
+    setSubmitted(true);
+  }
+
+  if (submitted) {
+    return (
+      <AuthCard title="Check your email">
+        <p className="text-sm text-muted-foreground">
+          We sent a verification link to <span className="font-medium text-foreground">{email}</span>.
+          Check the API server console for the stubbed link, then click it to finish setting up
+          your account.
+        </p>
+      </AuthCard>
+    );
   }
 
   return (
@@ -80,11 +95,11 @@ export default function SignupPage() {
         <Input
           label="Full name"
           type="text"
-          name="fullName"
+          name="name"
           autoComplete="name"
           required
-          value={fullName}
-          onChange={(e) => setFullName(e.target.value)}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
           disabled={loading}
         />
 
