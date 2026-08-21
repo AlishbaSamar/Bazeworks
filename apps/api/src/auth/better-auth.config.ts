@@ -11,9 +11,19 @@ const PASSWORD_COMPLEXITY = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
-  baseURL: `http://localhost:${process.env.PORT ?? '4000'}`,
+  baseURL: process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? '4000'}`,
   basePath: '/api/auth',
   trustedOrigins: [process.env.WEB_APP_URL!],
+  advanced: {
+    // Frontend (Vercel) and API (Railway) are on different domains, so the
+    // session cookie must be SameSite=None to be sent on cross-site fetch
+    // calls. Requires Secure, which localhost satisfies too (treated as a
+    // secure context by modern browsers) so this is safe for local dev.
+    defaultCookieAttributes: {
+      sameSite: 'none',
+      secure: true,
+    },
+  },
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,
