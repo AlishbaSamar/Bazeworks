@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
 import { PasswordStrengthMeter, scorePassword } from "@/components/ui/PasswordStrengthMeter";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
 
 function ResetPasswordContent() {
   const router = useRouter();
@@ -35,14 +35,16 @@ function ResetPasswordContent() {
     }
 
     setLoading(true);
-    try {
-      await apiClient.post("/auth/reset-password", { token, password });
-      setDone(true);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const { error: resetError } = await authClient.resetPassword({
+      newPassword: password,
+      token,
+    });
+    setLoading(false);
+    if (resetError) {
+      setError(resetError.message ?? "Something went wrong. Please try again.");
+      return;
     }
+    setDone(true);
   }
 
   if (done) {

@@ -6,7 +6,7 @@ import { AuthCard } from "@/components/ui/AuthCard";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
-import { apiClient, ApiError } from "@/lib/api-client";
+import { authClient } from "@/lib/auth-client";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -18,14 +18,16 @@ export default function ForgotPasswordPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    try {
-      await apiClient.post("/auth/forgot-password", { email });
-      setSent(true);
-    } catch (err) {
-      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
-    } finally {
-      setLoading(false);
+    const { error: resetError } = await authClient.requestPasswordReset({
+      email,
+      redirectTo: `${window.location.origin}/reset-password`,
+    });
+    setLoading(false);
+    if (resetError) {
+      setError(resetError.message ?? "Something went wrong. Please try again.");
+      return;
     }
+    setSent(true);
   }
 
   if (sent) {
