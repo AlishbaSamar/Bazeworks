@@ -9,6 +9,7 @@ import { AppService } from './app.service';
 import { PrismaModule } from './prisma/prisma.module';
 import { MailerModule } from './common/mailer/mailer.module';
 import { auth } from './auth/better-auth.config';
+import { WorkspacesModule } from './workspaces/workspaces.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { auth } from './auth/better-auth.config';
     PrismaModule,
     MailerModule,
     AuthModule.forRoot({ auth }),
+    WorkspacesModule,
   ],
   controllers: [AppController],
   providers: [

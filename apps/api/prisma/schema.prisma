@@ -19,6 +19,8 @@ model User {
   sessions      Session[]
   accounts      Account[]
 
+  workspaceMemberships WorkspaceMember[]
+
   @@unique([email])
   @@map("user")
 }
@@ -70,4 +72,41 @@ model Verification {
 
   @@index([identifier])
   @@map("verification")
+}
+
+enum WorkspaceRole {
+  OWNER
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  members WorkspaceMember[]
+
+  @@map("workspace")
+}
+
+model WorkspaceMember {
+  id        String        @id @default(cuid())
+  role      WorkspaceRole
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([userId])
+  @@index([workspaceId])
+  @@map("workspace_member")
 }
