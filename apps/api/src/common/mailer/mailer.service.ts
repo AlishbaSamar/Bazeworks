@@ -21,6 +21,11 @@ type Provider = 'gmail' | 'sendgrid' | 'resend' | null;
  * verified domain to deliver to arbitrary recipients; SendGrid only needs a
  * single verified sender. Falls back to logging the link when no provider
  * is configured, so local dev keeps working either way.
+ *
+ * EMAIL_VERIFICATION_MODE=test overrides EMAIL_PROVIDER and forces the
+ * console-log fallback even if provider credentials are set. This is for
+ * hosts (e.g. Railway) that block outbound SMTP/provider traffic — it lets
+ * us keep credentials configured for later without deleting them.
  */
 @Injectable()
 export class MailerService {
@@ -31,7 +36,8 @@ export class MailerService {
   private readonly from: string;
 
   constructor() {
-    const configured = process.env.EMAIL_PROVIDER?.toLowerCase();
+    const testMode = process.env.EMAIL_VERIFICATION_MODE?.toLowerCase() === 'test';
+    const configured = testMode ? undefined : process.env.EMAIL_PROVIDER?.toLowerCase();
 
     if (configured === 'gmail' && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
       this.gmailTransport = nodemailer.createTransport({
@@ -107,6 +113,6 @@ export class MailerService {
       return;
     }
 
-    this.logger.log(`[stub email] ${stubLabel}, ${to}: ${link}`);
+    this.logger.log(`[email verification disabled] ${stubLabel} for ${to}: ${link}`);
   }
 }
