@@ -3,13 +3,33 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { AuthCard } from "@/components/ui/AuthCard";
+import { AuthSplitLayout } from "@/components/ui/AuthSplitLayout";
+import { BrowserMockup } from "@/components/ui/BrowserMockup";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
 import { OAuthButton } from "@/components/ui/OAuthButton";
 import { GoogleIcon, GithubIcon } from "@/components/icons/ProviderIcons";
+import { BoltIcon, ShieldCheckIcon, GlobeIcon } from "@/components/icons/FeatureIcons";
 import { authClient } from "@/lib/auth-client";
+
+const FEATURES = [
+  {
+    icon: <BoltIcon />,
+    title: "Faster workflows",
+    description: "Visual editing and reusable components speed up delivery.",
+  },
+  {
+    icon: <ShieldCheckIcon />,
+    title: "Built for teams",
+    description: "Role-based access and content governance built in.",
+  },
+  {
+    icon: <GlobeIcon />,
+    title: "Production ready",
+    description: "Optimized, secure, and ready to scale.",
+  },
+];
 
 export default function LoginPage() {
   const router = useRouter();
@@ -33,9 +53,20 @@ export default function LoginPage() {
   }
 
   return (
-    <AuthCard
+    <AuthSplitLayout
+      headline="Build beautiful websites with confidence"
+      subheading="Design, build, and publish modern websites faster with Bazeworks."
+      features={FEATURES}
+      mockup={
+        <BrowserMockup
+          eyebrow="SaaS Starter"
+          heading="Build faster with Bazeworks"
+          body="The visual CMS for modern teams. Edit content, manage data, and ship production-ready sites."
+          cta="Get Started"
+        />
+      }
       title="Welcome back"
-      subtitle="Log in to your Bazeworks account"
+      subtitle="Log in to continue to Bazeworks"
       footer={
         <span>
           Don&apos;t have an account?{" "}
@@ -105,6 +136,6 @@ export default function LoginPage() {
           Log in
         </Button>
       </form>
-    </AuthCard>
+    </AuthSplitLayout>
   );
 }

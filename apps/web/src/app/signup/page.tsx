@@ -2,15 +2,36 @@
 
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
+import { AuthSplitLayout } from "@/components/ui/AuthSplitLayout";
 import { AuthCard } from "@/components/ui/AuthCard";
+import { BrowserMockup } from "@/components/ui/BrowserMockup";
 import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { FormBanner } from "@/components/ui/FormBanner";
 import { OAuthButton } from "@/components/ui/OAuthButton";
 import { GoogleIcon, GithubIcon } from "@/components/icons/ProviderIcons";
+import { LayersIcon, DatabaseIcon, RocketIcon } from "@/components/icons/FeatureIcons";
 import { PasswordStrengthMeter, scorePassword } from "@/components/ui/PasswordStrengthMeter";
 import { authClient } from "@/lib/auth-client";
+
+const FEATURES = [
+  {
+    icon: <LayersIcon />,
+    title: "Visual editing",
+    description: "Drag, drop, and see changes instantly.",
+  },
+  {
+    icon: <DatabaseIcon />,
+    title: "Content collections",
+    description: "Structure your content with powerful collections.",
+  },
+  {
+    icon: <RocketIcon />,
+    title: "Ship with confidence",
+    description: "Publish to production in one click.",
+  },
+];
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -66,7 +87,18 @@ export default function SignupPage() {
   }
 
   return (
-    <AuthCard
+    <AuthSplitLayout
+      headline="Create your first website in minutes"
+      subheading="The visual CMS for modern teams. Edit content, manage data, and ship production-ready sites."
+      features={FEATURES}
+      mockup={
+        <BrowserMockup
+          heading="Build faster with Bazeworks"
+          body="The visual CMS for modern teams. Edit content, manage data, and ship production-ready sites."
+          cta="Get Started"
+          nav={["Features", "Pricing", "About"]}
+        />
+      }
       title="Create your account"
       subtitle="Start building with Bazeworks"
       footer={
@@ -164,6 +196,6 @@ export default function SignupPage() {
           Create account
         </Button>
       </form>
-    </AuthCard>
+    </AuthSplitLayout>
   );
 }
