@@ -5,6 +5,8 @@ const VARIANT_CLASSES = {
     "bg-primary text-primary-foreground hover:bg-primary-hover disabled:bg-primary/50",
   secondary:
     "bg-white text-foreground border border-border hover:bg-background disabled:text-muted-foreground",
+  danger:
+    "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-destructive/50",
 } as const;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {

@@ -10,6 +10,8 @@ import { PrismaModule } from './prisma/prisma.module';
 import { MailerModule } from './common/mailer/mailer.module';
 import { auth } from './auth/better-auth.config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
+import { WebsitesModule } from './websites/websites.module';
+import { TemplatesModule } from './templates/templates.module';
 
 @Module({
   imports: [
@@ -19,11 +21,10 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
     MailerModule,
     AuthModule.forRoot({ auth }),
     WorkspacesModule,
+    WebsitesModule,
+    TemplatesModule,
   ],
   controllers: [AppController],
-  providers: [
-    AppService,
-    { provide: APP_GUARD, useClass: ThrottlerGuard },
-  ],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

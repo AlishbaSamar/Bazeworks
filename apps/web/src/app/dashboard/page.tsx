@@ -1,19 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { FormBanner } from "@/components/ui/FormBanner";
-import { Sidebar } from "@/components/dashboard/Sidebar";
-import { CreateWorkspaceDialog } from "@/components/dashboard/CreateWorkspaceDialog";
-import { authClient, useSession } from "@/lib/auth-client";
+import { WebsiteCard } from "@/components/dashboard/WebsiteCard";
+import { CreateWebsiteModal } from "@/components/dashboard/CreateWebsiteModal";
+import { RenameWebsiteDialog } from "@/components/dashboard/RenameWebsiteDialog";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { useSession } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api-client";
-import {
-  workspacesApi,
-  getStoredActiveWorkspaceId,
-  setStoredActiveWorkspaceId,
-  type Workspace,
-} from "@/lib/workspaces";
+import { websitesApi, type Website, type WebsiteStatus } from "@/lib/websites";
+import { useWorkspaceContext } from "@/lib/workspace-context";
 
 function greeting() {
   const hour = new Date().getHours();
@@ -22,177 +20,207 @@ function greeting() {
   return "Good evening";
 }
 
+type StatusFilter = "ALL" | WebsiteStatus;
+
 export default function DashboardPage() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
+  const { data: session } = useSession();
+  const { activeWorkspace } = useWorkspaceContext();
 
-  const [workspaces, setWorkspaces] = useState<Workspace[] | null>(null);
-  const [activeWorkspaceId, setActiveWorkspaceId] = useState<string | null>(null);
+  const [websites, setWebsites] = useState<Website[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("ALL");
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [renamingWebsite, setRenamingWebsite] = useState<Website | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    { type: "archive" | "delete"; website: Website } | null
+  >(null);
 
   useEffect(() => {
-    if (!isPending && !session) {
-      router.replace("/login");
-    }
-  }, [isPending, session, router]);
-
-  useEffect(() => {
-    if (!session) return;
-    workspacesApi
-      .list()
+    let cancelled = false;
+    websitesApi
+      .list(activeWorkspace.id)
       .then((list) => {
-        setWorkspaces(list);
-        const stored = getStoredActiveWorkspaceId();
-        const match = list.find((w) => w.id === stored);
-        setActiveWorkspaceId((match ?? list[0])?.id ?? null);
+        if (!cancelled) setWebsites(list);
       })
       .catch((err) => {
-        setLoadError(err instanceof ApiError ? err.message : "Couldn't load your workspaces.");
+        if (!cancelled) {
+          setLoadError(err instanceof ApiError ? err.message : "Couldn't load your websites.");
+        }
       });
-  }, [session]);
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWorkspace.id]);
 
-  function handleWorkspaceCreated(workspace: Workspace) {
-    setWorkspaces((prev) => [...(prev ?? []), workspace]);
-    setActiveWorkspaceId(workspace.id);
-    setStoredActiveWorkspaceId(workspace.id);
-    setShowCreateDialog(false);
+  const filtered = useMemo(() => {
+    if (!websites) return [];
+    return websites.filter((w) => {
+      const matchesSearch = w.name.toLowerCase().includes(search.toLowerCase());
+      const matchesStatus = statusFilter === "ALL" || w.status === statusFilter;
+      return matchesSearch && matchesStatus;
+    });
+  }, [websites, search, statusFilter]);
+
+  const canManage = activeWorkspace.role !== "VIEWER";
+  const canDelete = activeWorkspace.role === "OWNER" || activeWorkspace.role === "ADMIN";
+
+  function handleCreated(website: Website) {
+    setShowCreateModal(false);
+    router.push(`/dashboard/websites/${website.id}`);
   }
 
-  function handleWorkspaceSelect(workspace: Workspace) {
-    setActiveWorkspaceId(workspace.id);
-    setStoredActiveWorkspaceId(workspace.id);
+  async function handleRename(website: Website, name: string) {
+    const updated = await websitesApi.rename(activeWorkspace.id, website.id, name);
+    setWebsites((prev) => prev?.map((w) => (w.id === website.id ? { ...w, ...updated } : w)) ?? null);
+    setRenamingWebsite(null);
   }
 
-  if (isPending || !session) {
-    return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      </div>
-    );
+  async function handleDuplicate(website: Website) {
+    const copy = await websitesApi.duplicate(activeWorkspace.id, website.id);
+    setWebsites((prev) => (prev ? [copy, ...prev] : [copy]));
   }
 
-  const { user } = session;
-  const activeWorkspace = workspaces?.find((w) => w.id === activeWorkspaceId) ?? null;
+  async function handleConfirmedAction() {
+    if (!confirmAction) return;
+    const { type, website } = confirmAction;
+    if (type === "archive") {
+      await websitesApi.archive(activeWorkspace.id, website.id);
+    } else {
+      await websitesApi.remove(activeWorkspace.id, website.id);
+    }
+    setWebsites((prev) => prev?.filter((w) => w.id !== website.id) ?? null);
+    setConfirmAction(null);
+  }
 
   return (
-    <div className="min-h-screen bg-background">
-      {!user.emailVerified && (
-        <div className="border-b border-border bg-surface px-6 py-3">
-          <FormBanner variant="error">
-            Your email isn&apos;t verified yet. Check your inbox for the verification link.
-          </FormBanner>
+    <>
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            {greeting()}, {session?.user.name.split(" ")[0]} 👋
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Here&apos;s what&apos;s happening in {activeWorkspace.name}.
+          </p>
         </div>
-      )}
+        {canManage && (
+          <Button className="w-auto px-4" onClick={() => setShowCreateModal(true)}>
+            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+            </svg>
+            Create Website
+          </Button>
+        )}
+      </div>
 
-      {loadError && (
-        <div className="border-b border-border bg-surface px-6 py-3">
-          <FormBanner variant="error">{loadError}</FormBanner>
+      <div className="mt-8">
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Websites</h2>
+
+        <div className="mt-3 flex items-center gap-3">
+          <input
+            type="search"
+            placeholder="Search websites…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="h-10 w-full max-w-xs rounded-md border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
+            className="h-10 rounded-md border border-border bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="ALL">All Status</option>
+            <option value="DRAFT">Draft</option>
+            <option value="LIVE">Live</option>
+          </select>
         </div>
-      )}
 
-      {workspaces === null ? (
-        <div className="flex items-center justify-center py-24">
-          <p className="text-sm text-muted-foreground">Loading workspaces…</p>
-        </div>
-      ) : workspaces.length === 0 ? (
-        <CreateWorkspaceDialog
-          dismissable={false}
-          onClose={() => {}}
-          onCreated={handleWorkspaceCreated}
-        />
-      ) : (
-        <div className="flex">
-          {activeWorkspace && (
-            <Sidebar
-              workspaces={workspaces}
-              activeWorkspace={activeWorkspace}
-              onWorkspaceSelect={handleWorkspaceSelect}
-              onCreateWorkspace={() => setShowCreateDialog(true)}
-              userName={user.name}
-              onLogout={async () => {
-                await authClient.signOut();
-                router.push("/login");
-              }}
-            />
-          )}
+        {loadError && (
+          <div className="mt-4">
+            <FormBanner variant="error">{loadError}</FormBanner>
+          </div>
+        )}
 
-          <main className="min-w-0 flex-1 px-8 py-8">
-            <div className="mx-auto max-w-5xl">
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h1 className="text-2xl font-semibold text-foreground">
-                    {greeting()}, {user.name.split(" ")[0]} 👋
-                  </h1>
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {activeWorkspace
-                      ? `Here's what's happening in ${activeWorkspace.name}.`
-                      : "Select a workspace"}
-                  </p>
-                </div>
-                <Button className="w-auto px-4" disabled title="Coming Day 3">
-                  <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                    <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-                  </svg>
-                  Create Website
-                </Button>
-              </div>
-
-              <div className="mt-8">
-                <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
-                  Websites
-                </h2>
-
-                <div className="mt-3 flex items-center gap-3">
-                  <input
-                    type="search"
-                    placeholder="Search websites…"
-                    disabled
-                    className="h-10 w-full max-w-xs rounded-md border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:bg-background"
-                  />
-                  <select
-                    disabled
-                    className="h-10 rounded-md border border-border bg-white px-3 text-sm text-foreground disabled:cursor-not-allowed disabled:bg-background"
-                  >
-                    <option>All Status</option>
-                  </select>
-                </div>
-
-                <div className="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background">
-                    <svg
-                      className="h-6 w-6 text-muted-foreground"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="1.5"
-                      aria-hidden="true"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75h-4.5A.75.75 0 013 21V9.75z"
-                      />
-                    </svg>
-                  </div>
-                  <p className="mt-4 text-sm font-medium text-foreground">No websites yet</p>
-                  <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                    Website creation lands here on Day 3 — you&apos;ll be able to start from a blank
-                    site or a template.
-                  </p>
-                </div>
-              </div>
+        {websites === null ? (
+          <p className="mt-8 text-center text-sm text-muted-foreground">Loading websites…</p>
+        ) : filtered.length === 0 ? (
+          <div className="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background">
+              <svg
+                className="h-6 w-6 text-muted-foreground"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                aria-hidden="true"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M3 9.75L12 3l9 6.75V21a.75.75 0 01-.75.75h-4.5a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75h-4.5A.75.75 0 013 21V9.75z"
+                />
+              </svg>
             </div>
-          </main>
-        </div>
-      )}
+            <p className="mt-4 text-sm font-medium text-foreground">
+              {websites.length === 0 ? "No websites yet" : "No websites match your search"}
+            </p>
+            <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+              {websites.length === 0
+                ? "Create your first website to get started — start from a blank site or a template."
+                : "Try a different search term or status filter."}
+            </p>
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {filtered.map((website) => (
+              <WebsiteCard
+                key={website.id}
+                website={website}
+                canManage={canManage}
+                canDelete={canDelete}
+                onRename={() => setRenamingWebsite(website)}
+                onDuplicate={() => handleDuplicate(website)}
+                onArchive={() => setConfirmAction({ type: "archive", website })}
+                onDelete={() => setConfirmAction({ type: "delete", website })}
+              />
+            ))}
+          </div>
+        )}
+      </div>
 
-      {showCreateDialog && (
-        <CreateWorkspaceDialog
-          onClose={() => setShowCreateDialog(false)}
-          onCreated={handleWorkspaceCreated}
+      {showCreateModal && (
+        <CreateWebsiteModal
+          workspaceId={activeWorkspace.id}
+          onClose={() => setShowCreateModal(false)}
+          onCreated={handleCreated}
         />
       )}
-    </div>
+
+      {renamingWebsite && (
+        <RenameWebsiteDialog
+          initialName={renamingWebsite.name}
+          onClose={() => setRenamingWebsite(null)}
+          onRename={(name) => handleRename(renamingWebsite, name)}
+        />
+      )}
+
+      {confirmAction && (
+        <ConfirmDialog
+          title={confirmAction.type === "archive" ? "Archive website?" : "Delete website?"}
+          message={
+            confirmAction.type === "archive"
+              ? `"${confirmAction.website.name}" will be archived and hidden from your website list.`
+              : `"${confirmAction.website.name}" and all its pages will be permanently deleted. This can't be undone.`
+          }
+          confirmLabel={confirmAction.type === "archive" ? "Archive" : "Delete"}
+          danger={confirmAction.type === "delete"}
+          onClose={() => setConfirmAction(null)}
+          onConfirm={handleConfirmedAction}
+        />
+      )}
+    </>
   );
 }

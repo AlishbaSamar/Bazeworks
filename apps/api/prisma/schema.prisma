@@ -20,6 +20,7 @@ model User {
   accounts      Account[]
 
   workspaceMemberships WorkspaceMember[]
+  ownedWebsites        Website[]
 
   @@unique([email])
   @@map("user")
@@ -88,7 +89,8 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members WorkspaceMember[]
+  members  WorkspaceMember[]
+  websites Website[]
 
   @@map("workspace")
 }
@@ -109,4 +111,73 @@ model WorkspaceMember {
   @@index([userId])
   @@index([workspaceId])
   @@map("workspace_member")
+}
+
+enum WebsiteStatus {
+  DRAFT
+  LIVE
+}
+
+model Website {
+  id         String        @id @default(cuid())
+  name       String
+  slug       String
+  status     WebsiteStatus @default(DRAFT)
+  archivedAt DateTime?
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  ownerId String
+  owner   User   @relation(fields: [ownerId], references: [id])
+
+  pages Page[]
+
+  @@unique([workspaceId, slug])
+  @@index([workspaceId])
+  @@map("website")
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  @@unique([websiteId, slug])
+  @@index([websiteId])
+  @@map("page")
+}
+
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  slug        String   @unique
+  description String
+  category    String
+  isOfficial  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  pages TemplatePage[]
+
+  @@map("template")
+}
+
+model TemplatePage {
+  id   String @id @default(cuid())
+  name String
+  slug String
+
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, slug])
+  @@map("template_page")
 }
