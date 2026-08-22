@@ -36,13 +36,23 @@ export class MailerService {
   private readonly from: string;
 
   constructor() {
-    const testMode = process.env.EMAIL_VERIFICATION_MODE?.toLowerCase() === 'test';
-    const configured = testMode ? undefined : process.env.EMAIL_PROVIDER?.toLowerCase();
+    const testMode =
+      process.env.EMAIL_VERIFICATION_MODE?.toLowerCase() === 'test';
+    const configured = testMode
+      ? undefined
+      : process.env.EMAIL_PROVIDER?.toLowerCase();
 
-    if (configured === 'gmail' && process.env.GMAIL_USER && process.env.GMAIL_APP_PASSWORD) {
+    if (
+      configured === 'gmail' &&
+      process.env.GMAIL_USER &&
+      process.env.GMAIL_APP_PASSWORD
+    ) {
       this.gmailTransport = nodemailer.createTransport({
         service: 'gmail',
-        auth: { user: process.env.GMAIL_USER, pass: process.env.GMAIL_APP_PASSWORD },
+        auth: {
+          user: process.env.GMAIL_USER,
+          pass: process.env.GMAIL_APP_PASSWORD,
+        },
       });
       this.provider = 'gmail';
       this.from = process.env.EMAIL_FROM ?? process.env.GMAIL_USER;
@@ -65,7 +75,8 @@ export class MailerService {
       to,
       link,
       subject: 'Verify your Bazeworks account',
-      intro: 'Click the link below to verify your email and finish setting up your account.',
+      intro:
+        'Click the link below to verify your email and finish setting up your account.',
       stubLabel: 'Verify your Bazeworks account',
     });
   }
@@ -75,7 +86,8 @@ export class MailerService {
       to,
       link,
       subject: 'Reset your Bazeworks password',
-      intro: "Click the link below to reset your password. If you didn't request this, you can ignore this email.",
+      intro:
+        "Click the link below to reset your password. If you didn't request this, you can ignore this email.",
       stubLabel: 'Reset your Bazeworks password',
     });
   }
@@ -86,9 +98,17 @@ export class MailerService {
 
     if (this.provider === 'gmail') {
       try {
-        await this.gmailTransport!.sendMail({ from: this.from, to, subject, text, html });
+        await this.gmailTransport!.sendMail({
+          from: this.from,
+          to,
+          subject,
+          text,
+          html,
+        });
       } catch (err) {
-        this.logger.error(`Gmail SMTP failed to send "${subject}" to ${to}: ${(err as Error).message}`);
+        this.logger.error(
+          `Gmail SMTP failed to send "${subject}" to ${to}: ${(err as Error).message}`,
+        );
         throw err;
       }
       return;
@@ -98,21 +118,33 @@ export class MailerService {
       try {
         await sgMail.send({ to, from: this.from, subject, text, html });
       } catch (err) {
-        this.logger.error(`SendGrid failed to send "${subject}" to ${to}: ${(err as Error).message}`);
+        this.logger.error(
+          `SendGrid failed to send "${subject}" to ${to}: ${(err as Error).message}`,
+        );
         throw err;
       }
       return;
     }
 
     if (this.provider === 'resend') {
-      const { error } = await this.resend!.emails.send({ from: this.from, to, subject, text, html });
+      const { error } = await this.resend!.emails.send({
+        from: this.from,
+        to,
+        subject,
+        text,
+        html,
+      });
       if (error) {
-        this.logger.error(`Resend failed to send "${subject}" to ${to}: ${error.message}`);
+        this.logger.error(
+          `Resend failed to send "${subject}" to ${to}: ${error.message}`,
+        );
         throw new Error(`Failed to send email: ${error.message}`);
       }
       return;
     }
 
-    this.logger.log(`[email verification disabled] ${stubLabel} for ${to}: ${link}`);
+    this.logger.log(
+      `[email verification disabled] ${stubLabel} for ${to}: ${link}`,
+    );
   }
 }

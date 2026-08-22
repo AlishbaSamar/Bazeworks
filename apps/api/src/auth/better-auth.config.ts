@@ -11,7 +11,9 @@ const PASSWORD_COMPLEXITY = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/;
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, { provider: 'postgresql' }),
-  baseURL: process.env.API_BASE_URL ?? `http://localhost:${process.env.PORT ?? '4000'}`,
+  baseURL:
+    process.env.API_BASE_URL ??
+    `http://localhost:${process.env.PORT ?? '4000'}`,
   basePath: '/api/auth',
   trustedOrigins: [process.env.WEB_APP_URL!],
   advanced: {
@@ -51,12 +53,16 @@ export const auth = betterAuth({
     },
   },
   hooks: {
+    // createAuthMiddleware requires an async callback; this one never needs to await.
+    // eslint-disable-next-line @typescript-eslint/require-await
     before: createAuthMiddleware(async (ctx) => {
       if (ctx.path !== '/sign-up/email') return;
-      const password = ctx.body?.password as string | undefined;
+      const body = ctx.body as { password?: string } | undefined;
+      const password = body?.password;
       if (!password || !PASSWORD_COMPLEXITY.test(password)) {
         throw new APIError('BAD_REQUEST', {
-          message: 'Password must contain an uppercase letter, a lowercase letter, and a number.',
+          message:
+            'Password must contain an uppercase letter, a lowercase letter, and a number.',
         });
       }
     }),

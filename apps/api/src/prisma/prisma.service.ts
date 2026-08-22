@@ -1,4 +1,9 @@
-import { Injectable, Logger, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
+import {
+  Injectable,
+  Logger,
+  OnModuleDestroy,
+  OnModuleInit,
+} from '@nestjs/common';
 import { PrismaClient } from '@prisma/client';
 
 const CONNECT_RETRIES = 8;
@@ -24,7 +29,9 @@ export class PrismaService
         this.logger.warn(
           `Database connection attempt ${attempt}/${CONNECT_RETRIES} failed, retrying in ${CONNECT_RETRY_DELAY_MS}ms (likely a cold-start database waking up)...`,
         );
-        await new Promise((resolve) => setTimeout(resolve, CONNECT_RETRY_DELAY_MS));
+        await new Promise((resolve) =>
+          setTimeout(resolve, CONNECT_RETRY_DELAY_MS),
+        );
       }
     }
   }

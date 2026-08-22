@@ -34,7 +34,10 @@ export class WorkspacesService {
   }
 
   async rename(workspaceId: string, name: string) {
-    return this.prisma.workspace.update({ where: { id: workspaceId }, data: { name } });
+    return this.prisma.workspace.update({
+      where: { id: workspaceId },
+      data: { name },
+    });
   }
 
   private async requireMembership(workspaceId: string, userId: string) {
@@ -59,7 +62,9 @@ export class WorkspacesService {
 
     let slug = base;
     for (let attempt = 0; attempt < MAX_SLUG_ATTEMPTS; attempt++) {
-      const existing = await this.prisma.workspace.findUnique({ where: { slug } });
+      const existing = await this.prisma.workspace.findUnique({
+        where: { slug },
+      });
       if (!existing) return slug;
       slug = `${base}-${Math.random().toString(36).slice(2, 6)}`;
     }

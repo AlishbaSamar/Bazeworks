@@ -12,6 +12,7 @@ import { auth } from './auth/better-auth.config';
 import { WorkspacesModule } from './workspaces/workspaces.module';
 import { WebsitesModule } from './websites/websites.module';
 import { TemplatesModule } from './templates/templates.module';
+import { PagesModule } from './pages/pages.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { TemplatesModule } from './templates/templates.module';
     WorkspacesModule,
     WebsitesModule,
     TemplatesModule,
+    PagesModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

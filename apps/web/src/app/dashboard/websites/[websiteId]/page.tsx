@@ -128,12 +128,14 @@ export default function WebsiteOverviewPage() {
         ) : (
           <ul className="mt-3 flex flex-col gap-2">
             {website.pages.map((page) => (
-              <li
-                key={page.id}
-                className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm"
-              >
-                <span className="font-medium text-foreground">{page.name}</span>
-                <span className="text-muted-foreground">{page.slug}</span>
+              <li key={page.id}>
+                <Link
+                  href={`/editor/${activeWorkspace.id}/${website.id}/${page.id}`}
+                  className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:border-border-strong hover:bg-background"
+                >
+                  <span className="font-medium text-foreground">{page.name}</span>
+                  <span className="text-muted-foreground">{page.slug}</span>
+                </Link>
               </li>
             ))}
           </ul>

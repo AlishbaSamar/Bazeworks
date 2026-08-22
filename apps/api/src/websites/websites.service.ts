@@ -51,13 +51,15 @@ export class WebsitesService {
     userId: string,
     { name, templateId }: { name: string; templateId?: string },
   ) {
-    let templatePages: { name: string; slug: string }[] = [];
+    let pagesToCreate: { name: string; slug: string }[] = [
+      { name: 'Home', slug: '/' },
+    ];
     if (templateId) {
       const template = await this.templatesService.getWithPages(templateId);
       if (!template) {
         throw new NotFoundException('Template not found');
       }
-      templatePages = template.pages.map(({ name: pageName, slug }) => ({
+      pagesToCreate = template.pages.map(({ name: pageName, slug }) => ({
         name: pageName,
         slug,
       }));
@@ -70,7 +72,7 @@ export class WebsitesService {
         slug,
         workspaceId,
         ownerId: userId,
-        pages: templatePages.length > 0 ? { create: templatePages } : undefined,
+        pages: { create: pagesToCreate },
       },
       include: { _count: { select: { pages: true } } },
     });

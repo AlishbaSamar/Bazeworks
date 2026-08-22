@@ -1,4 +1,12 @@
-import { Body, Controller, Get, Param, Patch, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { Session } from '@thallesp/nestjs-better-auth';
 import { WorkspacesService } from './workspaces.service';
 import { CreateWorkspaceDto } from './dto/create-workspace.dto';
@@ -25,14 +33,20 @@ export class WorkspacesController {
   }
 
   @Get(':workspaceId')
-  get(@Session() session: AuthSession, @Param('workspaceId') workspaceId: string) {
+  get(
+    @Session() session: AuthSession,
+    @Param('workspaceId') workspaceId: string,
+  ) {
     return this.workspacesService.getForUser(workspaceId, session.user.id);
   }
 
   @Patch(':workspaceId')
   @UseGuards(WorkspaceRoleGuard)
   @RequireWorkspaceRole('OWNER', 'ADMIN')
-  rename(@Param('workspaceId') workspaceId: string, @Body() dto: RenameWorkspaceDto) {
+  rename(
+    @Param('workspaceId') workspaceId: string,
+    @Body() dto: RenameWorkspaceDto,
+  ) {
     return this.workspacesService.rename(workspaceId, dto.name);
   }
 }
