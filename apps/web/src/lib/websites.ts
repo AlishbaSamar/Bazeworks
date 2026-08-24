@@ -1,4 +1,5 @@
 import { apiClient } from "./api-client";
+import type { Theme } from "./theme";
 
 export type WebsiteStatus = "DRAFT" | "LIVE";
 
@@ -15,6 +16,7 @@ export interface Website {
   name: string;
   slug: string;
   status: WebsiteStatus;
+  theme: Partial<Theme>;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -38,6 +40,8 @@ export const websitesApi = {
     apiClient.post<Website>(`/workspaces/${workspaceId}/websites`, data),
   rename: (workspaceId: string, websiteId: string, name: string) =>
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}`, { name }),
+  updateTheme: (workspaceId: string, websiteId: string, theme: Theme) =>
+    apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/theme`, theme),
   duplicate: (workspaceId: string, websiteId: string) =>
     apiClient.post<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/duplicate`),
   archive: (workspaceId: string, websiteId: string) =>

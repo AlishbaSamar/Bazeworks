@@ -86,6 +86,14 @@ export class WebsitesService {
     });
   }
 
+  async updateTheme(workspaceId: string, websiteId: string, theme: object) {
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+    return this.prisma.website.update({
+      where: { id: websiteId },
+      data: { theme },
+    });
+  }
+
   async duplicate(workspaceId: string, websiteId: string, userId: string) {
     const source = await this.requireWebsiteInWorkspace(
       workspaceId,

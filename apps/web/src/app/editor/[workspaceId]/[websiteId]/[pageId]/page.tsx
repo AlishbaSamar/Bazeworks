@@ -8,8 +8,14 @@ import "@puckeditor/core/puck.css";
 import { useSession } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api-client";
 import { pagesApi, type PageWithContent } from "@/lib/pages";
+import { websitesApi } from "@/lib/websites";
 import { puckConfig } from "@/lib/puck-config";
 import { SearchableDrawer, TabbedFields } from "@/lib/puck-overrides";
+import { DEFAULT_THEME, googleFontsHref, themeCssVarsToStyleText, withThemeDefaults, type Theme } from "@/lib/theme";
+import { createThemePlugin } from "@/lib/theme-panel";
+
+const THEME_STYLE_TAG_ID = "bazeworks-site-theme-vars";
+const THEME_FONT_LINK_ID = "bazeworks-site-theme-fonts";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -86,9 +92,12 @@ export default function PageEditor() {
   const { data: session, isPending } = useSession();
 
   const [page, setPage] = useState<PageWithContent | null>(null);
+  const [theme, setTheme] = useState<Theme | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const themeSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const themeLoadedFromServer = useRef(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -117,6 +126,78 @@ export default function PageEditor() {
     };
   }, [session, params.workspaceId, params.websiteId, params.pageId]);
 
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    websitesApi
+      .get(params.workspaceId, params.websiteId)
+      .then((website) => {
+        if (cancelled) return;
+        themeLoadedFromServer.current = true;
+        setTheme(withThemeDefaults(website.theme));
+      })
+      .catch(() => {
+        if (cancelled) return;
+        themeLoadedFromServer.current = true;
+        setTheme(DEFAULT_THEME);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [session, params.workspaceId, params.websiteId]);
+
+  // Create the theme <style>/<link> tags once and tear them down only on
+  // unmount — Puck syncs host <style>/<link> tags into its canvas iframe,
+  // so every Layout/Section component (which reads var(--site-*)) updates
+  // live as their content is updated below, without a destroy/recreate
+  // cycle on every keystroke in the theme panel.
+  useEffect(() => {
+    const styleTag = document.createElement("style");
+    styleTag.id = THEME_STYLE_TAG_ID;
+    document.head.appendChild(styleTag);
+
+    const linkTag = document.createElement("link");
+    linkTag.id = THEME_FONT_LINK_ID;
+    linkTag.rel = "stylesheet";
+    document.head.appendChild(linkTag);
+
+    return () => {
+      styleTag.remove();
+      linkTag.remove();
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!theme) return;
+    const styleTag = document.getElementById(THEME_STYLE_TAG_ID);
+    if (styleTag) styleTag.textContent = themeCssVarsToStyleText(theme);
+  }, [theme]);
+
+  // Fonts are user-selectable at runtime, so load them via the Google Fonts
+  // CSS2 API rather than next/font (which only knows fonts picked at build
+  // time). Deliberately scoped to just the two font fields — re-fetching
+  // the stylesheet on every unrelated color edit would be wasteful.
+  useEffect(() => {
+    if (!theme) return;
+    const linkTag = document.getElementById(THEME_FONT_LINK_ID) as HTMLLinkElement | null;
+    if (linkTag) linkTag.href = googleFontsHref([theme.typography.headingFont, theme.typography.bodyFont]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [theme?.typography.headingFont, theme?.typography.bodyFont]);
+
+  // Auto-save theme edits (debounced) — website-level settings persist
+  // immediately elsewhere in the app (e.g. rename), unlike page content
+  // which waits for an explicit Save.
+  useEffect(() => {
+    if (!theme || !themeLoadedFromServer.current) return;
+    if (themeSaveTimeoutRef.current) clearTimeout(themeSaveTimeoutRef.current);
+    themeSaveTimeoutRef.current = setTimeout(() => {
+      websitesApi.updateTheme(params.workspaceId, params.websiteId, theme).catch(() => {});
+    }, 600);
+    return () => {
+      if (themeSaveTimeoutRef.current) clearTimeout(themeSaveTimeoutRef.current);
+    };
+  }, [theme, params.workspaceId, params.websiteId]);
+
   async function handleSave(data: Data) {
     setSaveStatus("saving");
     try {
@@ -143,7 +224,7 @@ export default function PageEditor() {
     );
   }
 
-  if (isPending || !session || !page) {
+  if (isPending || !session || !page || !theme) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Loading editor…</p>
@@ -158,6 +239,7 @@ export default function PageEditor() {
       headerTitle={page.name}
       headerPath={page.slug}
       height="100vh"
+      plugins={[createThemePlugin(theme, setTheme)]}
       overrides={{
         headerActions: () => (
           <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />

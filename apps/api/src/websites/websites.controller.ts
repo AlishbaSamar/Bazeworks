@@ -12,6 +12,7 @@ import { Session } from '@thallesp/nestjs-better-auth';
 import { WebsitesService } from './websites.service';
 import { CreateWebsiteDto } from './dto/create-website.dto';
 import { RenameWebsiteDto } from './dto/rename-website.dto';
+import { UpdateThemeDto } from './dto/update-theme.dto';
 import { WorkspaceRoleGuard } from '../workspaces/guards/workspace-role.guard';
 import { RequireWorkspaceRole } from '../workspaces/decorators/require-workspace-role.decorator';
 
@@ -64,6 +65,17 @@ export class WebsitesController {
     @Body() dto: RenameWebsiteDto,
   ) {
     return this.websitesService.rename(workspaceId, websiteId, dto.name);
+  }
+
+  @Patch(':websiteId/theme')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  updateTheme(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Body() dto: UpdateThemeDto,
+  ) {
+    return this.websitesService.updateTheme(workspaceId, websiteId, dto);
   }
 
   @Post(':websiteId/duplicate')

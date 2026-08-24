@@ -1,4 +1,6 @@
 import type { Config } from "@puckeditor/core";
+import { layoutComponents, layoutFieldTabs, type LayoutComponents } from "./puck-components/layout";
+import { sectionComponents, sectionFieldTabs, type SectionComponents } from "./puck-components/sections";
 
 const ALIGN_OPTIONS = [
   { label: "Left", value: "left" },
@@ -63,7 +65,8 @@ export type PuckComponents = {
   Link: LinkProps;
   Divider: DividerProps;
   Spacer: SpacerProps;
-};
+} & LayoutComponents &
+  SectionComponents;
 
 const SPACING_PX: Record<DividerProps["spacing"], number> = {
   small: 12,
@@ -102,6 +105,8 @@ export const FIELD_TABS: Partial<Record<keyof PuckComponents, Partial<Record<Fie
   Link: { content: ["text", "url"], advanced: ["newTab"] },
   Divider: { style: ["spacing"] },
   Spacer: { style: ["height"] },
+  ...layoutFieldTabs,
+  ...sectionFieldTabs,
 };
 
 export const puckConfig: Config<PuckComponents> = {
@@ -109,6 +114,14 @@ export const puckConfig: Config<PuckComponents> = {
     basic: {
       title: "Basic",
       components: ["Text", "Heading", "Button", "Image", "Link", "Divider", "Spacer"],
+    },
+    layout: {
+      title: "Layout",
+      components: ["Section", "Container", "Columns", "Grid", "Stack"],
+    },
+    sections: {
+      title: "Website Sections",
+      components: ["Navbar", "Footer", "Hero", "Features", "Testimonials", "Pricing", "FAQ", "CTA", "ContactForm"],
     },
   },
   components: {
@@ -309,5 +322,7 @@ export const puckConfig: Config<PuckComponents> = {
       },
       render: ({ height }: SpacerProps) => <div style={{ height }} />,
     },
+    ...layoutComponents,
+    ...sectionComponents,
   },
 };

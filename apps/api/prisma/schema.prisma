@@ -123,6 +123,7 @@ model Website {
   name       String
   slug       String
   status     WebsiteStatus @default(DRAFT)
+  theme      Json          @default("{}")
   archivedAt DateTime?
   createdAt  DateTime      @default(now())
   updatedAt  DateTime      @updatedAt
