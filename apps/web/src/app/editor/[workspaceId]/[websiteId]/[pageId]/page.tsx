@@ -9,6 +9,7 @@ import { useSession } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api-client";
 import { pagesApi, type PageWithContent } from "@/lib/pages";
 import { puckConfig } from "@/lib/puck-config";
+import { SearchableDrawer, TabbedFields } from "@/lib/puck-overrides";
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -161,6 +162,8 @@ export default function PageEditor() {
         headerActions: () => (
           <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
         ),
+        drawer: SearchableDrawer,
+        fields: TabbedFields,
       }}
     />
   );

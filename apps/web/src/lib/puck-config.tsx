@@ -55,7 +55,7 @@ interface SpacerProps {
   height: number;
 }
 
-type PuckComponents = {
+export type PuckComponents = {
   Text: TextProps;
   Heading: HeadingProps;
   Button: ButtonProps;
@@ -81,6 +81,27 @@ const ICONS: Record<Exclude<ButtonProps["icon"], "none">, string> = {
   arrow: "→",
   check: "✓",
   star: "★",
+};
+
+export type FieldTab = "content" | "style" | "advanced";
+
+/**
+ * Which properties panel tab each component's fields belong to. Components
+ * not listed here (or fields omitted from every tab) fall back to the
+ * default flat field list — see the `fields` override in puck-overrides.tsx.
+ */
+export const FIELD_TABS: Partial<Record<keyof PuckComponents, Partial<Record<FieldTab, string[]>>>> = {
+  Text: { content: ["content"], style: ["align"] },
+  Heading: { content: ["text", "level"], style: ["align"] },
+  Button: {
+    content: ["text", "url"],
+    style: ["variant", "size", "align", "icon"],
+    advanced: ["newTab"],
+  },
+  Image: { content: ["src", "alt", "link"], style: ["width", "height", "objectFit"] },
+  Link: { content: ["text", "url"], advanced: ["newTab"] },
+  Divider: { style: ["spacing"] },
+  Spacer: { style: ["height"] },
 };
 
 export const puckConfig: Config<PuckComponents> = {
