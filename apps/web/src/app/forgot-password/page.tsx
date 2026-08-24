@@ -40,6 +40,12 @@ export default function ForgotPasswordPage() {
           </Link>
         }
       >
+        <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-sunken text-foreground">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9 6 9-6" />
+          </svg>
+        </div>
         <p className="text-sm text-muted-foreground">
           If an account exists for <span className="font-medium text-foreground">{email}</span>,
           we&apos;ve sent a link to reset your password. Check the API server console for the

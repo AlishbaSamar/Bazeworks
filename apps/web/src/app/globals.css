@@ -2,39 +2,51 @@
 
 :root {
   /* Surfaces */
-  --background: #fafafa;
+  --background: #fafaf8;
   --surface: #ffffff;
-  --foreground: #0a0a0a;
-  --muted-foreground: #6b7280;
+  --surface-sunken: #f3f2ee;
+  --foreground: #0b0b0c;
+  --muted-foreground: #68686f;
 
   /* Borders */
-  --border: #e5e7eb;
-  --border-strong: #d1d5db;
+  --border: #e7e5e0;
+  --border-strong: #d4d1c9;
 
   /* Primary / accent — black, not blue. Overrides any blue shown in reference wireframes. */
   --primary: #111111;
   --primary-foreground: #ffffff;
-  --primary-hover: #262626;
+  --primary-hover: #2a2a2a;
 
   /* Semantic */
   --destructive: #dc2626;
   --destructive-foreground: #ffffff;
-  --success: #16a34a;
-  --warning: #d97706;
+  --destructive-soft: #fdecec;
+  --success: #157347;
+  --success-foreground: #ffffff;
+  --success-soft: #e9f5ee;
+  --warning: #b45309;
+  --warning-soft: #fbf1e0;
 
   /* Focus ring */
   --ring: #111111;
 
   /* Radius scale */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+
+  /* Elevation */
+  --shadow-sm: 0 1px 2px rgba(17, 17, 17, 0.04), 0 1px 1px rgba(17, 17, 17, 0.03);
+  --shadow-md: 0 6px 16px -4px rgba(17, 17, 17, 0.10), 0 2px 6px -2px rgba(17, 17, 17, 0.05);
+  --shadow-lg: 0 16px 40px -12px rgba(17, 17, 17, 0.18), 0 6px 16px -6px rgba(17, 17, 17, 0.08);
+  --shadow-xl: 0 28px 72px -16px rgba(17, 17, 17, 0.24);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
+  --color-surface-sunken: var(--surface-sunken);
   --color-foreground: var(--foreground);
   --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
@@ -44,8 +56,12 @@
   --color-primary-hover: var(--primary-hover);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
   --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
   --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
   --color-ring: var(--ring);
 
   --radius-sm: var(--radius-sm);
@@ -53,12 +69,109 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
 
+  --shadow-sm: var(--shadow-sm);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+}
+
+::selection {
+  background: var(--foreground);
+  color: var(--background);
+}
+
+/*
+ * Puck (the page editor) defines its own token system in a lower-priority
+ * `@layer puck-tokens`, defaulting every interactive/selection/focus color to
+ * blue ("azure"). These overrides are unlayered, so they win the cascade
+ * regardless of import order and retint the whole editor to match the black
+ * accent used everywhere else — without patching Puck's internals.
+ */
+:root {
+  --puck-color-interactive: var(--primary);
+  --puck-color-interactive-hover: var(--primary-hover);
+  --puck-color-interactive-active: #000000;
+  --puck-color-interactive-subtle: var(--surface-sunken);
+  --puck-color-interactive-soft: var(--surface-sunken);
+  --puck-color-interactive-soft-hover: var(--border);
+  --puck-color-interactive-neutral-hover: var(--surface-sunken);
+  --puck-color-interactive-inverse-hover: #404040;
+  --puck-color-interactive-inverse-active: #262626;
+  --puck-color-focus-ring: var(--primary);
+  --puck-color-selection-bg: rgba(17, 17, 17, 0.06);
+  --puck-color-selection-border: var(--primary);
+  --puck-color-line-placeholder: var(--primary);
+}
+
+/* Subtle dotted canvas used behind marketing hero / empty states */
+.bg-dot-grid {
+  background-image: radial-gradient(var(--border-strong) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+@keyframes backdrop-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-backdrop {
+  animation: backdrop-in 150ms ease-out;
+}
+
+.animate-modal {
+  animation: modal-in 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.animate-menu {
+  animation: menu-in 120ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+  * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

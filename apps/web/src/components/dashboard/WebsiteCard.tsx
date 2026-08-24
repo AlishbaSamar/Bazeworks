@@ -11,8 +11,8 @@ const STATUS_LABEL: Record<Website["status"], string> = {
 };
 
 const STATUS_CLASSES: Record<Website["status"], string> = {
-  DRAFT: "bg-background text-muted-foreground border-border",
-  LIVE: "bg-success/10 text-success border-success/20",
+  DRAFT: "bg-surface-sunken text-muted-foreground border-border",
+  LIVE: "bg-success-soft text-success border-success/20",
 };
 
 export function WebsiteCard({
@@ -46,27 +46,36 @@ export function WebsiteCard({
   }, []);
 
   return (
-    <div className="group relative rounded-lg border border-border bg-surface p-5 transition-colors hover:border-border-strong">
+    <div className="group relative overflow-hidden rounded-xl border border-border bg-surface shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:border-border-strong hover:shadow-md">
       <Link href={`/dashboard/websites/${website.id}`} className="block">
-        <div className="flex items-start justify-between gap-2">
-          <div className="min-w-0">
-            <p className="truncate text-sm font-semibold text-foreground">{website.name}</p>
-            <p className="truncate text-xs text-muted-foreground">{website.slug}</p>
+        <div className="bg-dot-grid relative flex h-28 items-center justify-center bg-surface-sunken">
+          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-surface text-foreground shadow-sm ring-1 ring-border transition-transform duration-150 group-hover:scale-105">
+            <svg className="h-4.5 w-4.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+              <rect x="3.5" y="4.5" width="17" height="15" rx="2" />
+              <path strokeLinecap="round" d="M3.5 9h17" />
+              <circle cx="6" cy="6.75" r="0.5" fill="currentColor" stroke="none" />
+              <circle cx="8" cy="6.75" r="0.5" fill="currentColor" stroke="none" />
+            </svg>
           </div>
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <span
-            className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[website.status]}`}
-          >
-            {STATUS_LABEL[website.status]}
-          </span>
-          <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
-            Not Deployed
-          </span>
-        </div>
+        <div className="p-4">
+          <p className="truncate text-sm font-semibold text-foreground">{website.name}</p>
+          <p className="truncate text-xs text-muted-foreground">{website.slug}</p>
 
-        <p className="mt-3 text-xs text-muted-foreground">Updated {timeAgo(website.updatedAt)}</p>
+          <div className="mt-3 flex items-center gap-1.5">
+            <span
+              className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[website.status]}`}
+            >
+              {STATUS_LABEL[website.status]}
+            </span>
+            <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+              Not Deployed
+            </span>
+          </div>
+
+          <p className="mt-3 text-xs text-muted-foreground">Updated {timeAgo(website.updatedAt)}</p>
+        </div>
       </Link>
 
       {canManage && (
@@ -74,7 +83,7 @@ export function WebsiteCard({
           <button
             type="button"
             onClick={() => setMenuOpen((v) => !v)}
-            className="rounded-md p-1 text-muted-foreground opacity-0 transition-opacity hover:bg-background hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
+            className="rounded-md bg-surface/90 p-1 text-muted-foreground opacity-0 shadow-sm ring-1 ring-border backdrop-blur-sm transition-opacity hover:bg-surface hover:text-foreground focus-visible:opacity-100 group-hover:opacity-100"
             aria-label="Website actions"
           >
             <svg className="h-4.5 w-4.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -83,14 +92,14 @@ export function WebsiteCard({
           </button>
 
           {menuOpen && (
-            <div className="absolute right-0 top-full z-10 mt-1 w-40 rounded-md border border-border bg-surface py-1 shadow-lg">
+            <div className="animate-menu absolute right-0 top-full z-10 mt-1.5 w-40 rounded-lg border border-border bg-surface py-1 shadow-lg">
               <button
                 type="button"
                 onClick={() => {
                   setMenuOpen(false);
                   onRename();
                 }}
-                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background"
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
               >
                 Rename
               </button>
@@ -100,7 +109,7 @@ export function WebsiteCard({
                   setMenuOpen(false);
                   onDuplicate();
                 }}
-                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background"
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
               >
                 Duplicate
               </button>
@@ -110,7 +119,7 @@ export function WebsiteCard({
                   setMenuOpen(false);
                   onArchive();
                 }}
-                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-background"
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
               >
                 Archive
               </button>
@@ -123,7 +132,7 @@ export function WebsiteCard({
                       setMenuOpen(false);
                       onDelete();
                     }}
-                    className="block w-full px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive/5"
+                    className="block w-full px-3 py-2 text-left text-sm text-destructive transition-colors hover:bg-destructive-soft"
                   >
                     Delete
                   </button>

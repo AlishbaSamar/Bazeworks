@@ -99,7 +99,7 @@ export default function DashboardPage() {
     <>
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">
+          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
             {greeting()}, {session?.user.name.split(" ")[0]} 👋
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -117,25 +117,50 @@ export default function DashboardPage() {
       </div>
 
       <div className="mt-8">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Websites</h2>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">
+            Websites{websites && websites.length > 0 ? ` (${websites.length})` : ""}
+          </h2>
 
-        <div className="mt-3 flex items-center gap-3">
-          <input
-            type="search"
-            placeholder="Search websites…"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="h-10 w-full max-w-xs rounded-md border border-border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          />
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value as StatusFilter)}
-            className="h-10 rounded-md border border-border bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-          >
-            <option value="ALL">All Status</option>
-            <option value="DRAFT">Draft</option>
-            <option value="LIVE">Live</option>
-          </select>
+          <div className="flex items-center gap-2.5">
+            <div className="relative">
+              <svg
+                className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9 3.5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM2 9a7 7 0 1112.45 4.39l3.58 3.58a.75.75 0 11-1.06 1.06l-3.58-3.58A7 7 0 012 9z"
+                  clipRule="evenodd"
+                />
+              </svg>
+              <input
+                type="search"
+                placeholder="Search websites…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="h-10 w-full rounded-md border border-border bg-white pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring sm:w-56"
+              />
+            </div>
+            <div className="flex h-10 items-center gap-0.5 rounded-md border border-border bg-white p-1">
+              {(["ALL", "DRAFT", "LIVE"] as const).map((status) => (
+                <button
+                  key={status}
+                  type="button"
+                  onClick={() => setStatusFilter(status)}
+                  className={`h-full rounded px-3 text-xs font-medium transition-colors ${
+                    statusFilter === status
+                      ? "bg-primary text-primary-foreground"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {status === "ALL" ? "All" : status === "DRAFT" ? "Draft" : "Live"}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {loadError && (
@@ -147,8 +172,8 @@ export default function DashboardPage() {
         {websites === null ? (
           <p className="mt-8 text-center text-sm text-muted-foreground">Loading websites…</p>
         ) : filtered.length === 0 ? (
-          <div className="mt-4 flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-background">
+          <div className="mt-4 flex flex-col items-center justify-center rounded-xl border border-dashed border-border-strong bg-surface px-6 py-16 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-surface-sunken">
               <svg
                 className="h-6 w-6 text-muted-foreground"
                 viewBox="0 0 24 24"
@@ -172,6 +197,11 @@ export default function DashboardPage() {
                 ? "Create your first website to get started — start from a blank site or a template."
                 : "Try a different search term or status filter."}
             </p>
+            {websites.length === 0 && canManage && (
+              <Button className="mt-5 w-auto px-4" onClick={() => setShowCreateModal(true)}>
+                Create Website
+              </Button>
+            )}
           </div>
         ) : (
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">

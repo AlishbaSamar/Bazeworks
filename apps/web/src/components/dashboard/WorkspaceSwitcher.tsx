@@ -39,7 +39,7 @@ export function WorkspaceSwitcher({
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex w-full items-center gap-2.5 rounded-md border border-border bg-white px-3 py-2 text-left transition-colors hover:bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="flex w-full items-center gap-2.5 rounded-lg border border-border bg-white px-3 py-2 text-left shadow-sm transition-all hover:border-border-strong hover:bg-surface-sunken focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
       >
         <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-primary text-xs font-semibold text-primary-foreground">
           {activeWorkspace.name.charAt(0).toUpperCase()}
@@ -63,7 +63,7 @@ export function WorkspaceSwitcher({
       </button>
 
       {open && (
-        <div className="absolute left-0 right-0 top-full z-20 mt-1 rounded-md border border-border bg-surface py-1 shadow-lg">
+        <div className="animate-menu absolute left-0 right-0 top-full z-20 mt-1.5 rounded-lg border border-border bg-surface py-1 shadow-lg">
           {workspaces.map((workspace) => (
             <button
               key={workspace.id}
@@ -72,8 +72,8 @@ export function WorkspaceSwitcher({
                 onSelect(workspace);
                 setOpen(false);
               }}
-              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-background ${
-                workspace.id === activeWorkspace.id ? "bg-background" : ""
+              className={`flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm transition-colors hover:bg-surface-sunken ${
+                workspace.id === activeWorkspace.id ? "bg-surface-sunken" : ""
               }`}
             >
               <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-primary text-[10px] font-semibold text-primary-foreground">
@@ -81,6 +81,15 @@ export function WorkspaceSwitcher({
               </div>
               <span className="min-w-0 flex-1 truncate text-foreground">{workspace.name}</span>
               <span className="text-xs text-muted-foreground">{ROLE_LABEL[workspace.role]}</span>
+              {workspace.id === activeWorkspace.id && (
+                <svg className="h-4 w-4 shrink-0 text-foreground" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                  <path
+                    fillRule="evenodd"
+                    d="M16.7 5.3a1 1 0 010 1.4l-7.4 7.4a1 1 0 01-1.4 0L3.3 9.5a1 1 0 111.4-1.4l3.6 3.6 6.7-6.7a1 1 0 011.4 0z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              )}
             </button>
           ))}
 
@@ -92,7 +101,7 @@ export function WorkspaceSwitcher({
               onCreateNew();
               setOpen(false);
             }}
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-background"
+            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm font-medium text-foreground transition-colors hover:bg-surface-sunken"
           >
             <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
               <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />

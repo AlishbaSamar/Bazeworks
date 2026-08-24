@@ -27,14 +27,14 @@ export function PasswordStrengthMeter({ password }: { password: string }) {
         {[0, 1, 2, 3].map((i) => (
           <div
             key={i}
-            className={`h-1.5 flex-1 rounded-full transition-colors ${
+            className={`h-1.5 flex-1 rounded-full transition-colors duration-200 ${
               password && i <= score - 1 ? level.color : "bg-border"
             }`}
           />
         ))}
       </div>
       {password && (
-        <p className="text-xs text-muted-foreground">{level.label}</p>
+        <p className="text-xs font-medium text-muted-foreground">{level.label}</p>
       )}
     </div>
   );

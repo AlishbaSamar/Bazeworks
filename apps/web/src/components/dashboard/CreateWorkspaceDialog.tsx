@@ -36,13 +36,18 @@ export function CreateWorkspaceDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="animate-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
       onClick={dismissable ? onClose : undefined}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-border bg-surface p-6 shadow-lg"
+        className="animate-modal w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
+        <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-primary text-primary-foreground">
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+          </svg>
+        </div>
         <h2 className="text-lg font-semibold text-foreground">Create a workspace</h2>
         <p className="mt-1 text-sm text-muted-foreground">
           Workspaces keep a client&apos;s or team&apos;s websites, content, and members together.

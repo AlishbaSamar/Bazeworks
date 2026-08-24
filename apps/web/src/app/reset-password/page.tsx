@@ -51,6 +51,15 @@ function ResetPasswordContent() {
     return (
       <AuthCard title="Password updated">
         <div className="flex flex-col gap-4">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-success-soft text-success">
+            <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path
+                fillRule="evenodd"
+                d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.7-10.3a1 1 0 00-1.4-1.4L9 9.58 7.7 8.3a1 1 0 00-1.4 1.42l2 2a1 1 0 001.4 0l4-4z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </div>
           <p className="text-sm text-muted-foreground">
             Your password has been reset. You can now log in with your new password.
           </p>

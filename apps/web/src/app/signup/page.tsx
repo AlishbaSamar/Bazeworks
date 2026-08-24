@@ -77,6 +77,12 @@ export default function SignupPage() {
   if (submitted) {
     return (
       <AuthCard title="Check your email">
+        <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-full bg-surface-sunken text-foreground">
+          <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" />
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 7l9 6 9-6" />
+          </svg>
+        </div>
         <p className="text-sm text-muted-foreground">
           We sent a verification link to <span className="font-medium text-foreground">{email}</span>.
           Check the API server console for the stubbed link, then click it to finish setting up

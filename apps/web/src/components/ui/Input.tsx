@@ -19,8 +19,10 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             ref={ref}
             id={inputId}
             aria-invalid={!!error}
-            className={`h-11 w-full rounded-md border bg-white px-3 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background disabled:text-muted-foreground ${
-              error ? "border-destructive" : "border-border"
+            className={`h-11 w-full rounded-md border bg-white px-3.5 text-sm text-foreground placeholder:text-muted-foreground transition-shadow duration-150 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-1 disabled:cursor-not-allowed disabled:bg-background disabled:text-muted-foreground ${
+              error
+                ? "border-destructive focus:ring-destructive"
+                : "border-border hover:border-border-strong"
             } ${trailing ? "pr-10" : ""} ${className}`}
             {...rest}
           />

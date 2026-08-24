@@ -32,9 +32,12 @@ export function RenameWebsiteDialog({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4" onClick={onClose}>
+    <div
+      className="animate-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
       <div
-        className="w-full max-w-sm rounded-lg border border-border bg-surface p-6 shadow-lg"
+        className="animate-modal w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
         <h2 className="text-lg font-semibold text-foreground">Rename website</h2>

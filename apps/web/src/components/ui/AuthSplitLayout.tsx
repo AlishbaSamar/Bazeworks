@@ -28,25 +28,31 @@ export function AuthSplitLayout({
 }) {
   return (
     <div className="flex min-h-screen bg-background">
-      <div className="hidden w-1/2 flex-col justify-center gap-10 border-r border-border px-16 py-12 lg:flex">
-        <div className="flex items-center gap-2">
+      <div className="bg-dot-grid relative hidden w-1/2 flex-col justify-center gap-10 overflow-hidden border-r border-border px-16 py-12 lg:flex">
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -left-24 -top-24 h-72 w-72 rounded-full bg-foreground/4 blur-3xl"
+        />
+        <Link href="/" className="relative flex items-center gap-2">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
             B
           </div>
-          <span className="text-lg font-semibold text-foreground">Bazeworks</span>
-        </div>
+          <span className="text-lg font-semibold tracking-tight text-foreground">Bazeworks</span>
+        </Link>
 
-        <div className="max-w-md">
-          <h1 className="text-4xl font-semibold leading-tight text-foreground">{headline}</h1>
+        <div className="relative max-w-md">
+          <h1 className="text-4xl font-semibold leading-[1.1] tracking-tight text-foreground text-balance">
+            {headline}
+          </h1>
           <p className="mt-4 text-base text-muted-foreground">{subheading}</p>
         </div>
 
-        <div className="max-w-md">{mockup}</div>
+        <div className="relative max-w-md">{mockup}</div>
 
-        <div className="grid max-w-md grid-cols-3 gap-6">
+        <div className="relative grid max-w-md grid-cols-3 gap-6">
           {features.map((feature) => (
-            <div key={feature.title} className="flex flex-col gap-2">
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10 text-primary">
+            <div key={feature.title} className="flex flex-col gap-2.5">
+              <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-foreground text-background">
                 {feature.icon}
               </div>
               <p className="text-sm font-semibold text-foreground">{feature.title}</p>
@@ -57,16 +63,16 @@ export function AuthSplitLayout({
       </div>
 
       <div className="flex w-full flex-col items-center justify-center px-4 py-12 lg:w-1/2">
-        <div className="mb-8 flex items-center gap-2 lg:hidden">
+        <Link href="/" className="mb-8 flex items-center gap-2 lg:hidden">
           <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
             B
           </div>
-          <span className="text-lg font-semibold text-foreground">Bazeworks</span>
-        </div>
+          <span className="text-lg font-semibold tracking-tight text-foreground">Bazeworks</span>
+        </Link>
 
-        <div className="w-full max-w-[400px]">
-          <div className="mb-6 flex flex-col gap-1.5">
-            <h2 className="text-xl font-semibold text-foreground">{title}</h2>
+        <div className="w-full max-w-100">
+          <div className="mb-7 flex flex-col gap-1.5">
+            <h2 className="text-2xl font-semibold tracking-tight text-foreground">{title}</h2>
             {subtitle && <p className="text-sm text-muted-foreground">{subtitle}</p>}
           </div>
 

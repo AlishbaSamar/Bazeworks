@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { WorkspaceSwitcher } from "@/components/dashboard/WorkspaceSwitcher";
 import {
   DashboardIcon,
@@ -35,12 +36,12 @@ export function Sidebar({
 }) {
   return (
     <nav className="flex w-64 shrink-0 flex-col gap-6 border-r border-border bg-surface p-4">
-      <div className="flex items-center gap-2 px-1">
+      <Link href="/dashboard" className="flex items-center gap-2 px-1">
         <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary text-sm font-semibold text-primary-foreground">
           B
         </div>
-        <span className="text-lg font-semibold text-foreground">Bazeworks</span>
-      </div>
+        <span className="text-lg font-semibold tracking-tight text-foreground">Bazeworks</span>
+      </Link>
 
       <WorkspaceSwitcher
         workspaces={workspaces}
@@ -49,38 +50,45 @@ export function Sidebar({
         onCreateNew={onCreateWorkspace}
       />
 
-      <div className="flex flex-1 flex-col gap-1">
+      <div className="flex flex-1 flex-col gap-0.5">
         {NAV_ITEMS.map((item) => {
           const Icon = item.icon;
           return (
             <div
               key={item.label}
               title={item.active ? undefined : "Coming soon"}
-              className={`flex items-center gap-2.5 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-between gap-2.5 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 item.active
-                  ? "bg-background text-foreground"
-                  : "cursor-not-allowed text-muted-foreground/60"
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "cursor-not-allowed text-muted-foreground/70"
               }`}
             >
-              <Icon />
-              {item.label}
+              <span className="flex items-center gap-2.5">
+                <Icon />
+                {item.label}
+              </span>
+              {!item.active && (
+                <span className="rounded-full bg-surface-sunken px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                  Soon
+                </span>
+              )}
             </div>
           );
         })}
       </div>
 
-      <div className="rounded-lg border border-border bg-background p-3.5">
+      <div className="rounded-xl border border-border bg-surface-sunken p-3.5">
         <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
           Team Plan
         </p>
         <p className="mt-1 text-sm font-semibold text-foreground">0 / 3 Websites</p>
         <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-border">
-          <div className="h-full w-0 rounded-full bg-primary" />
+          <div className="h-full w-0 rounded-full bg-primary transition-all" />
         </div>
       </div>
 
-      <div className="flex items-center gap-2.5 rounded-md px-1 py-1">
-        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
+      <div className="flex items-center gap-2.5 rounded-lg px-1 py-1">
+        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-semibold text-primary-foreground">
           {userName.charAt(0).toUpperCase()}
         </div>
         <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">

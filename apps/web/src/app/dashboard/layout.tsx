@@ -69,7 +69,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   const activeWorkspace = workspaces?.find((w) => w.id === activeWorkspaceId) ?? null;
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-surface-sunken">
       {!user.emailVerified && (
         <div className="border-b border-border bg-surface px-6 py-3">
           <FormBanner variant="error">

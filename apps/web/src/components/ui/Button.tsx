@@ -2,11 +2,13 @@ import { forwardRef, type ButtonHTMLAttributes } from "react";
 
 const VARIANT_CLASSES = {
   primary:
-    "bg-primary text-primary-foreground hover:bg-primary-hover disabled:bg-primary/50",
+    "bg-primary text-primary-foreground shadow-sm hover:bg-primary-hover hover:shadow-md disabled:bg-primary/40 disabled:shadow-none",
   secondary:
-    "bg-white text-foreground border border-border hover:bg-background disabled:text-muted-foreground",
+    "bg-white text-foreground border border-border shadow-sm hover:border-border-strong hover:bg-background disabled:text-muted-foreground disabled:shadow-none",
+  ghost:
+    "bg-transparent text-foreground hover:bg-surface-sunken disabled:text-muted-foreground",
   danger:
-    "bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:bg-destructive/50",
+    "bg-destructive text-destructive-foreground shadow-sm hover:bg-destructive/90 disabled:bg-destructive/50",
 } as const;
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -20,7 +22,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed ${VARIANT_CLASSES[variant]} ${className}`}
+        className={`inline-flex h-11 items-center justify-center gap-2 rounded-md px-4 text-sm font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 active:scale-[0.98] disabled:cursor-not-allowed disabled:active:scale-100 ${VARIANT_CLASSES[variant]} ${className}`}
         {...rest}
       >
         {loading && (

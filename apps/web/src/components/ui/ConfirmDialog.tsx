@@ -35,13 +35,26 @@ export function ConfirmDialog({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="animate-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
       onClick={loading ? undefined : onClose}
     >
       <div
-        className="w-full max-w-sm rounded-lg border border-border bg-surface p-6 shadow-lg"
+        className="animate-modal w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
         onClick={(e) => e.stopPropagation()}
       >
+        <div
+          className={`mb-4 flex h-10 w-10 items-center justify-center rounded-full ${
+            danger ? "bg-destructive-soft text-destructive" : "bg-surface-sunken text-foreground"
+          }`}
+        >
+          <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+            <path
+              fillRule="evenodd"
+              d="M10 18a8 8 0 100-16 8 8 0 000 16zM10 6a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 6zm0 8a1 1 0 100-2 1 1 0 000 2z"
+              clipRule="evenodd"
+            />
+          </svg>
+        </div>
         <h2 className="text-lg font-semibold text-foreground">{title}</h2>
         <p className="mt-1 text-sm text-muted-foreground">{message}</p>
 
