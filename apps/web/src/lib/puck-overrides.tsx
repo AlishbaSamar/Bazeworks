@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import type { Config, Field } from "@puckeditor/core";
-import { AutoField, Drawer, usePuck } from "@puckeditor/core";
+import { AutoField, Drawer, FieldLabel, usePuck } from "@puckeditor/core";
 import { FIELD_TABS, type FieldTab, type PuckComponents } from "./puck-config";
 
 type PuckConfig = Config<PuckComponents>;
@@ -171,13 +171,14 @@ export function TabbedFields({ children, isLoading }: { children: React.ReactNod
             const field = fields?.[key];
             if (!field) return null;
             return (
-              <AutoField
-                key={key}
-                field={field}
-                value={(selectedItem.props as Record<string, unknown>)[key]}
-                onChange={(value) => handleChange(key, value)}
-                id={`field-${key}`}
-              />
+              <FieldLabel key={key} label={field.label ?? key} icon={field.labelIcon}>
+                <AutoField
+                  field={field}
+                  value={(selectedItem.props as Record<string, unknown>)[key]}
+                  onChange={(value) => handleChange(key, value)}
+                  id={`field-${key}`}
+                />
+              </FieldLabel>
             );
           })}
         </div>
