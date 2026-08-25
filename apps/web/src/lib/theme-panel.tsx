@@ -1,6 +1,33 @@
 "use client";
 
+import { createContext, useContext, useMemo } from "react";
 import { FONT_OPTIONS, FONT_WEIGHTS, SPACING_SCALES, type Theme } from "./theme";
+
+interface ThemeContextValue {
+  theme: Theme;
+  onChange: (theme: Theme) => void;
+}
+
+const ThemeEditContext = createContext<ThemeContextValue | null>(null);
+
+/**
+ * Wrap <Puck> with this so the theme plugin (created once, with a stable
+ * identity — see createThemePlugin below) can read the *current* theme via
+ * context on every render instead of capturing it in a closure. Passing a
+ * freshly-built plugin object to Puck on every keystroke would make Puck
+ * treat it as a new plugin and remount the panel, dropping input focus
+ * after a single character.
+ */
+export function ThemeEditProvider({ theme, onChange, children }: ThemeContextValue & { children: React.ReactNode }) {
+  const value = useMemo(() => ({ theme, onChange }), [theme, onChange]);
+  return <ThemeEditContext.Provider value={value}>{children}</ThemeEditContext.Provider>;
+}
+
+function ConnectedThemeSettingsPanel() {
+  const ctx = useContext(ThemeEditContext);
+  if (!ctx) return null;
+  return <ThemeSettingsPanel theme={ctx.theme} onChange={ctx.onChange} />;
+}
 
 function ThemeIcon() {
   return (
@@ -194,11 +221,17 @@ export function ThemeSettingsPanel({ theme, onChange }: { theme: Theme; onChange
   );
 }
 
-export function createThemePlugin(theme: Theme, onChange: (theme: Theme) => void) {
-  return {
-    name: "site-theme",
-    label: "Theme",
-    icon: <ThemeIcon />,
-    render: () => <ThemeSettingsPanel theme={theme} onChange={onChange} />,
-  };
-}
+/**
+ * A single, stable plugin object — created once at module scope, not per
+ * render — so its identity never changes across re-renders. Pair with
+ * ThemeEditProvider (which the panel reads via context) to get live theme
+ * updates without Puck seeing a "new" plugin on every keystroke.
+ */
+export const themePlugin = {
+  name: "site-theme",
+  label: "Theme",
+  icon: <ThemeIcon />,
+  render: () => <ConnectedThemeSettingsPanel />,
+};
+
+export const THEME_PLUGINS = [themePlugin];

@@ -12,7 +12,7 @@ import { websitesApi } from "@/lib/websites";
 import { puckConfig } from "@/lib/puck-config";
 import { SearchableDrawer, TabbedFields } from "@/lib/puck-overrides";
 import { DEFAULT_THEME, googleFontsHref, themeCssVarsToStyleText, withThemeDefaults, type Theme } from "@/lib/theme";
-import { createThemePlugin } from "@/lib/theme-panel";
+import { THEME_PLUGINS, ThemeEditProvider } from "@/lib/theme-panel";
 
 const THEME_STYLE_TAG_ID = "bazeworks-site-theme-vars";
 const THEME_FONT_LINK_ID = "bazeworks-site-theme-fonts";
@@ -233,20 +233,22 @@ export default function PageEditor() {
   }
 
   return (
-    <Puck
-      config={puckConfig}
-      data={page.content}
-      headerTitle={page.name}
-      headerPath={page.slug}
-      height="100vh"
-      plugins={[createThemePlugin(theme, setTheme)]}
-      overrides={{
-        headerActions: () => (
-          <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
-        ),
-        drawer: SearchableDrawer,
-        fields: TabbedFields,
-      }}
-    />
+    <ThemeEditProvider theme={theme} onChange={setTheme}>
+      <Puck
+        config={puckConfig}
+        data={page.content}
+        headerTitle={page.name}
+        headerPath={page.slug}
+        height="100vh"
+        plugins={THEME_PLUGINS}
+        overrides={{
+          headerActions: () => (
+            <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
+          ),
+          drawer: SearchableDrawer,
+          fields: TabbedFields,
+        }}
+      />
+    </ThemeEditProvider>
   );
 }
