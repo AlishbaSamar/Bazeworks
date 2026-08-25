@@ -5,8 +5,13 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormBanner } from "@/components/ui/FormBanner";
 import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { CreatePageModal } from "@/components/website/CreatePageModal";
+import { RenamePageDialog } from "@/components/website/RenamePageDialog";
+import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
+import { pagesApi, type Page } from "@/lib/pages";
 import { useWorkspaceContext } from "@/lib/workspace-context";
 import { timeAgo } from "@/lib/format";
 
@@ -25,7 +30,14 @@ export default function WebsiteOverviewPage() {
   const { activeWorkspace } = useWorkspaceContext();
 
   const [website, setWebsite] = useState<WebsiteOverview | null>(null);
+  const [pages, setPages] = useState<Page[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const [showCreatePage, setShowCreatePage] = useState(false);
+  const [renamingPage, setRenamingPage] = useState<Page | null>(null);
+  const [deletingPage, setDeletingPage] = useState<Page | null>(null);
+
+  const canManage = activeWorkspace.role !== "VIEWER";
 
   useEffect(() => {
     let cancelled = false;
@@ -34,6 +46,7 @@ export default function WebsiteOverviewPage() {
       .then((data) => {
         if (!cancelled) {
           setWebsite(data);
+          setPages(data.pages.map((p) => ({ ...p, websiteId: data.id })));
           setError(null);
         }
       })
@@ -50,6 +63,35 @@ export default function WebsiteOverviewPage() {
     };
   }, [activeWorkspace.id, params.websiteId]);
 
+  function handlePageCreated(page: Page) {
+    setShowCreatePage(false);
+    setPages((prev) => (prev ? [...prev, page] : [page]));
+  }
+
+  async function handleRenamePage(page: Page, data: { name: string; slug: string }) {
+    const updated = await pagesApi.rename(activeWorkspace.id, params.websiteId, page.id, data);
+    setPages((prev) => prev?.map((p) => (p.id === page.id ? { ...p, ...updated } : p)) ?? null);
+    setRenamingPage(null);
+  }
+
+  async function handleDuplicatePage(page: Page) {
+    const copy = await pagesApi.duplicate(activeWorkspace.id, params.websiteId, page.id);
+    setPages((prev) => (prev ? [...prev, { ...copy, websiteId: params.websiteId }] : [copy]));
+  }
+
+  async function handleToggleStatus(page: Page) {
+    const nextStatus = page.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    const updated = await pagesApi.updateStatus(activeWorkspace.id, params.websiteId, page.id, nextStatus);
+    setPages((prev) => prev?.map((p) => (p.id === page.id ? { ...p, ...updated } : p)) ?? null);
+  }
+
+  async function handleDeletePage() {
+    if (!deletingPage) return;
+    await pagesApi.remove(activeWorkspace.id, params.websiteId, deletingPage.id);
+    setPages((prev) => prev?.filter((p) => p.id !== deletingPage.id) ?? null);
+    setDeletingPage(null);
+  }
+
   if (error) {
     return (
       <div className="flex flex-col gap-4">
@@ -61,7 +103,7 @@ export default function WebsiteOverviewPage() {
     );
   }
 
-  if (!website) {
+  if (!website || !pages) {
     return <p className="text-sm text-muted-foreground">Loading website…</p>;
   }
 
@@ -156,35 +198,71 @@ export default function WebsiteOverviewPage() {
       </div>
 
       <div className="mt-4 rounded-xl border border-border bg-surface p-5 shadow-sm">
-        <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-          Pages ({website.pages.length})
-        </p>
-        {website.pages.length === 0 ? (
-          <p className="mt-3 text-sm text-muted-foreground">No pages yet.</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Pages ({pages.length})
+          </p>
+          {canManage && (
+            <Button className="w-auto px-3 py-1.5 text-xs" onClick={() => setShowCreatePage(true)}>
+              <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+              </svg>
+              Create Page
+            </Button>
+          )}
+        </div>
+
+        {pages.length === 0 ? (
+          <div className="mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong py-10 text-center">
+            <p className="text-sm font-medium text-foreground">No pages yet</p>
+            <p className="mt-1 text-sm text-muted-foreground">Create a page to start building this website.</p>
+          </div>
         ) : (
-          <ul className="mt-3 flex flex-col gap-2">
-            {website.pages.map((page) => (
-              <li key={page.id}>
-                <Link
-                  href={`/editor/${activeWorkspace.id}/${website.id}/${page.id}`}
-                  className="group flex items-center justify-between rounded-lg border border-border px-3.5 py-2.5 text-sm transition-colors hover:border-border-strong hover:bg-surface-sunken"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-md bg-surface-sunken text-muted-foreground transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
-                      <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
-                        <rect x="4" y="3" width="16" height="18" rx="2" />
-                        <path strokeLinecap="round" d="M8 8h8M8 12h8M8 16h5" />
-                      </svg>
-                    </span>
-                    <span className="font-medium text-foreground">{page.name}</span>
-                  </span>
-                  <span className="text-muted-foreground">{page.slug}</span>
-                </Link>
-              </li>
+          <div className="mt-3 flex flex-col gap-2">
+            {pages.map((page) => (
+              <PageRow
+                key={page.id}
+                page={page}
+                editorHref={`/editor/${activeWorkspace.id}/${website.id}/${page.id}`}
+                canManage={canManage}
+                onEdit={() => setRenamingPage(page)}
+                onDuplicate={() => handleDuplicatePage(page)}
+                onToggleStatus={() => handleToggleStatus(page)}
+                onDelete={() => setDeletingPage(page)}
+              />
             ))}
-          </ul>
+          </div>
         )}
       </div>
+
+      {showCreatePage && (
+        <CreatePageModal
+          workspaceId={activeWorkspace.id}
+          websiteId={website.id}
+          onClose={() => setShowCreatePage(false)}
+          onCreated={handlePageCreated}
+        />
+      )}
+
+      {renamingPage && (
+        <RenamePageDialog
+          initialName={renamingPage.name}
+          initialSlug={renamingPage.slug}
+          onClose={() => setRenamingPage(null)}
+          onSave={(data) => handleRenamePage(renamingPage, data)}
+        />
+      )}
+
+      {deletingPage && (
+        <ConfirmDialog
+          title="Delete page?"
+          message={`"${deletingPage.name}" will be permanently deleted. This can't be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingPage(null)}
+          onConfirm={handleDeletePage}
+        />
+      )}
     </div>
   );
 }

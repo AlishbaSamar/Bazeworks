@@ -119,14 +119,16 @@ enum WebsiteStatus {
 }
 
 model Website {
-  id         String        @id @default(cuid())
-  name       String
-  slug       String
-  status     WebsiteStatus @default(DRAFT)
-  theme      Json          @default("{}")
-  archivedAt DateTime?
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
+  id           String        @id @default(cuid())
+  name         String
+  slug         String
+  status       WebsiteStatus @default(DRAFT)
+  theme        Json          @default("{}")
+  globalHeader Json          @default("{}")
+  globalFooter Json          @default("{}")
+  archivedAt   DateTime?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -141,13 +143,19 @@ model Website {
   @@map("website")
 }
 
+enum PageStatus {
+  DRAFT
+  PUBLISHED
+}
+
 model Page {
-  id        String   @id @default(cuid())
+  id        String     @id @default(cuid())
   name      String
   slug      String
-  content   Json     @default("{\"content\":[],\"root\":{}}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  status    PageStatus @default(DRAFT)
+  content   Json       @default("{\"content\":[],\"root\":{}}")
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   websiteId String
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)

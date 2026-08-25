@@ -6,6 +6,10 @@ import {
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { TemplatesService } from '../templates/templates.service';
+import {
+  DEFAULT_GLOBAL_FOOTER,
+  DEFAULT_GLOBAL_HEADER,
+} from './default-global-components';
 
 const MAX_SLUG_ATTEMPTS = 5;
 
@@ -72,6 +76,8 @@ export class WebsitesService {
         slug,
         workspaceId,
         ownerId: userId,
+        globalHeader: DEFAULT_GLOBAL_HEADER as Prisma.InputJsonValue,
+        globalFooter: DEFAULT_GLOBAL_FOOTER as Prisma.InputJsonValue,
         pages: { create: pagesToCreate },
       },
       include: { _count: { select: { pages: true } } },
@@ -94,6 +100,30 @@ export class WebsitesService {
     });
   }
 
+  async updateGlobalHeader(
+    workspaceId: string,
+    websiteId: string,
+    props: object,
+  ) {
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+    return this.prisma.website.update({
+      where: { id: websiteId },
+      data: { globalHeader: props },
+    });
+  }
+
+  async updateGlobalFooter(
+    workspaceId: string,
+    websiteId: string,
+    props: object,
+  ) {
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+    return this.prisma.website.update({
+      where: { id: websiteId },
+      data: { globalFooter: props },
+    });
+  }
+
   async duplicate(workspaceId: string, websiteId: string, userId: string) {
     const source = await this.requireWebsiteInWorkspace(
       workspaceId,
@@ -113,11 +143,18 @@ export class WebsitesService {
         slug,
         workspaceId,
         ownerId: userId,
+        theme: source.theme as Prisma.InputJsonValue,
+        globalHeader: source.globalHeader as Prisma.InputJsonValue,
+        globalFooter: source.globalFooter as Prisma.InputJsonValue,
         pages: {
-          create: source.pages.map(({ name, slug: pageSlug }) => ({
-            name,
-            slug: pageSlug,
-          })),
+          create: source.pages.map(
+            ({ name, slug: pageSlug, status, content }) => ({
+              name,
+              slug: pageSlug,
+              status,
+              content: content as Prisma.InputJsonValue,
+            }),
+          ),
         },
       },
       include: { _count: { select: { pages: true } } },

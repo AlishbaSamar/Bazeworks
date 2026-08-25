@@ -13,9 +13,17 @@ import { puckConfig } from "@/lib/puck-config";
 import { SearchableDrawer, TabbedFields } from "@/lib/puck-overrides";
 import { DEFAULT_THEME, googleFontsHref, themeCssVarsToStyleText, withThemeDefaults, type Theme } from "@/lib/theme";
 import { THEME_PLUGINS, ThemeEditProvider } from "@/lib/theme-panel";
+import {
+  GlobalComponentsProvider,
+  HEADER_FOOTER_PLUGINS,
+  withGlobalFooterDefaults,
+  withGlobalHeaderDefaults,
+} from "@/lib/global-components-panel";
+import type { NavbarProps, FooterProps } from "@/lib/puck-components/sections";
 
 const THEME_STYLE_TAG_ID = "bazeworks-site-theme-vars";
 const THEME_FONT_LINK_ID = "bazeworks-site-theme-fonts";
+const EDITOR_PLUGINS = [...THEME_PLUGINS, ...HEADER_FOOTER_PLUGINS];
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
@@ -93,11 +101,16 @@ export default function PageEditor() {
 
   const [page, setPage] = useState<PageWithContent | null>(null);
   const [theme, setTheme] = useState<Theme | null>(null);
+  const [header, setHeader] = useState<NavbarProps | null>(null);
+  const [footer, setFooter] = useState<FooterProps | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const themeSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const headerSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const footerSaveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const themeLoadedFromServer = useRef(false);
+  const globalComponentsLoadedFromServer = useRef(false);
 
   useEffect(() => {
     if (!isPending && !session) {
@@ -134,12 +147,18 @@ export default function PageEditor() {
       .then((website) => {
         if (cancelled) return;
         themeLoadedFromServer.current = true;
+        globalComponentsLoadedFromServer.current = true;
         setTheme(withThemeDefaults(website.theme));
+        setHeader(withGlobalHeaderDefaults(website.globalHeader as Partial<NavbarProps>));
+        setFooter(withGlobalFooterDefaults(website.globalFooter as Partial<FooterProps>));
       })
       .catch(() => {
         if (cancelled) return;
         themeLoadedFromServer.current = true;
+        globalComponentsLoadedFromServer.current = true;
         setTheme(DEFAULT_THEME);
+        setHeader(withGlobalHeaderDefaults(null));
+        setFooter(withGlobalFooterDefaults(null));
       });
     return () => {
       cancelled = true;
@@ -198,6 +217,29 @@ export default function PageEditor() {
     };
   }, [theme, params.workspaceId, params.websiteId]);
 
+  // Auto-save global header/footer edits (debounced), same pattern as theme.
+  useEffect(() => {
+    if (!header || !globalComponentsLoadedFromServer.current) return;
+    if (headerSaveTimeoutRef.current) clearTimeout(headerSaveTimeoutRef.current);
+    headerSaveTimeoutRef.current = setTimeout(() => {
+      websitesApi.updateGlobalHeader(params.workspaceId, params.websiteId, header).catch(() => {});
+    }, 600);
+    return () => {
+      if (headerSaveTimeoutRef.current) clearTimeout(headerSaveTimeoutRef.current);
+    };
+  }, [header, params.workspaceId, params.websiteId]);
+
+  useEffect(() => {
+    if (!footer || !globalComponentsLoadedFromServer.current) return;
+    if (footerSaveTimeoutRef.current) clearTimeout(footerSaveTimeoutRef.current);
+    footerSaveTimeoutRef.current = setTimeout(() => {
+      websitesApi.updateGlobalFooter(params.workspaceId, params.websiteId, footer).catch(() => {});
+    }, 600);
+    return () => {
+      if (footerSaveTimeoutRef.current) clearTimeout(footerSaveTimeoutRef.current);
+    };
+  }, [footer, params.workspaceId, params.websiteId]);
+
   async function handleSave(data: Data) {
     setSaveStatus("saving");
     try {
@@ -224,7 +266,7 @@ export default function PageEditor() {
     );
   }
 
-  if (isPending || !session || !page || !theme) {
+  if (isPending || !session || !page || !theme || !header || !footer) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background">
         <p className="text-sm text-muted-foreground">Loading editor…</p>
@@ -234,21 +276,23 @@ export default function PageEditor() {
 
   return (
     <ThemeEditProvider theme={theme} onChange={setTheme}>
-      <Puck
-        config={puckConfig}
-        data={page.content}
-        headerTitle={page.name}
-        headerPath={page.slug}
-        height="100vh"
-        plugins={THEME_PLUGINS}
-        overrides={{
-          headerActions: () => (
-            <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
-          ),
-          drawer: SearchableDrawer,
-          fields: TabbedFields,
-        }}
-      />
+      <GlobalComponentsProvider header={header} footer={footer} onHeaderChange={setHeader} onFooterChange={setFooter}>
+        <Puck
+          config={puckConfig}
+          data={page.content}
+          headerTitle={page.name}
+          headerPath={page.slug}
+          height="100vh"
+          plugins={EDITOR_PLUGINS}
+          overrides={{
+            headerActions: () => (
+              <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
+            ),
+            drawer: SearchableDrawer,
+            fields: TabbedFields,
+          }}
+        />
+      </GlobalComponentsProvider>
     </ThemeEditProvider>
   );
 }

@@ -1,0 +1,87 @@
+"use client";
+
+import { useState, type FormEvent } from "react";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { FormBanner } from "@/components/ui/FormBanner";
+import { ApiError } from "@/lib/api-client";
+
+export function RenamePageDialog({
+  initialName,
+  initialSlug,
+  onClose,
+  onSave,
+}: {
+  initialName: string;
+  initialSlug: string;
+  onClose: () => void;
+  onSave: (data: { name: string; slug: string }) => Promise<void>;
+}) {
+  const [name, setName] = useState(initialName);
+  const [slug, setSlug] = useState(initialSlug);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setError(null);
+    if (!slug.startsWith("/")) {
+      setError("Slug must start with /");
+      return;
+    }
+    setLoading(true);
+    try {
+      await onSave({ name, slug });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Something went wrong. Please try again.");
+      setLoading(false);
+    }
+  }
+
+  return (
+    <div
+      className="animate-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="animate-modal w-full max-w-sm rounded-xl border border-border bg-surface p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h2 className="text-lg font-semibold text-foreground">Edit page</h2>
+
+        <form onSubmit={handleSubmit} className="mt-5 flex flex-col gap-4" noValidate>
+          {error && <FormBanner variant="error">{error}</FormBanner>}
+
+          <Input
+            label="Page name"
+            name="name"
+            autoFocus
+            required
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            disabled={loading}
+          />
+
+          <Input
+            label="Slug"
+            name="slug"
+            required
+            value={slug}
+            onChange={(e) => setSlug(e.target.value)}
+            disabled={loading}
+            spellCheck={false}
+          />
+
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="secondary" className="w-auto px-4" onClick={onClose} disabled={loading}>
+              Cancel
+            </Button>
+            <Button type="submit" className="w-auto px-4" loading={loading}>
+              Save
+            </Button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

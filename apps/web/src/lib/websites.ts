@@ -1,5 +1,6 @@
 import { apiClient } from "./api-client";
 import type { Theme } from "./theme";
+import type { PageStatus } from "./pages";
 
 export type WebsiteStatus = "DRAFT" | "LIVE";
 
@@ -7,6 +8,7 @@ export interface WebsitePage {
   id: string;
   name: string;
   slug: string;
+  status: PageStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -17,6 +19,8 @@ export interface Website {
   slug: string;
   status: WebsiteStatus;
   theme: Partial<Theme>;
+  globalHeader: Record<string, unknown>;
+  globalFooter: Record<string, unknown>;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -42,6 +46,10 @@ export const websitesApi = {
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}`, { name }),
   updateTheme: (workspaceId: string, websiteId: string, theme: Theme) =>
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/theme`, theme),
+  updateGlobalHeader: (workspaceId: string, websiteId: string, props: object) =>
+    apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/global-header`, { props }),
+  updateGlobalFooter: (workspaceId: string, websiteId: string, props: object) =>
+    apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/global-footer`, { props }),
   duplicate: (workspaceId: string, websiteId: string) =>
     apiClient.post<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/duplicate`),
   archive: (workspaceId: string, websiteId: string) =>

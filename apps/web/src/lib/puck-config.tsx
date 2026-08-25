@@ -1,6 +1,7 @@
 import type { Config } from "@puckeditor/core";
 import { layoutComponents, layoutFieldTabs, type LayoutComponents } from "./puck-components/layout";
 import { sectionComponents, sectionFieldTabs, type SectionComponents } from "./puck-components/sections";
+import { GlobalHeaderFooterWrapper } from "./global-components-panel";
 
 const ALIGN_OPTIONS = [
   { label: "Left", value: "left" },
@@ -324,5 +325,8 @@ export const puckConfig: Config<PuckComponents> = {
     },
     ...layoutComponents,
     ...sectionComponents,
+  },
+  root: {
+    render: ({ children }) => <GlobalHeaderFooterWrapper>{children}</GlobalHeaderFooterWrapper>,
   },
 };

@@ -1,5 +1,13 @@
 import { Type } from 'class-transformer';
-import { IsHexColor, IsIn, IsInt, IsString, Max, Min, ValidateNested } from 'class-validator';
+import {
+  IsHexColor,
+  IsIn,
+  IsInt,
+  IsString,
+  Max,
+  Min,
+  ValidateNested,
+} from 'class-validator';
 
 const FONT_OPTIONS = [
   'Inter',
