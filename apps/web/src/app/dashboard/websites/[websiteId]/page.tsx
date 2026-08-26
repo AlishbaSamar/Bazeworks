@@ -12,6 +12,7 @@ import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
 import { pagesApi, type Page } from "@/lib/pages";
+import { collectionsApi } from "@/lib/collections";
 import { useWorkspaceContext } from "@/lib/workspace-context";
 import { timeAgo } from "@/lib/format";
 
@@ -31,6 +32,7 @@ export default function WebsiteOverviewPage() {
 
   const [website, setWebsite] = useState<WebsiteOverview | null>(null);
   const [pages, setPages] = useState<Page[] | null>(null);
+  const [collectionCount, setCollectionCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
   const [showCreatePage, setShowCreatePage] = useState(false);
@@ -58,6 +60,19 @@ export default function WebsiteOverviewPage() {
             : "Couldn't load this website.",
         );
       });
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWorkspace.id, params.websiteId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    collectionsApi
+      .list(activeWorkspace.id, params.websiteId)
+      .then((list) => {
+        if (!cancelled) setCollectionCount(list.length);
+      })
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -172,7 +187,10 @@ export default function WebsiteOverviewPage() {
         </div>
 
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
+          <Link
+            href={`/dashboard/websites/${website.id}/collections`}
+            className="rounded-xl border border-border bg-surface p-5 shadow-sm transition-colors hover:border-border-strong hover:bg-surface-sunken"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-sunken text-foreground">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
                 <ellipse cx="12" cy="6" rx="8" ry="3" />
@@ -180,9 +198,9 @@ export default function WebsiteOverviewPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M4 12c0 1.66 3.58 3 8 3s8-1.34 8-3" />
               </svg>
             </div>
-            <p className="mt-3 text-lg font-semibold text-foreground">0</p>
+            <p className="mt-3 text-lg font-semibold text-foreground">{collectionCount}</p>
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Collections</p>
-          </div>
+          </Link>
           <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-sunken text-foreground">
               <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

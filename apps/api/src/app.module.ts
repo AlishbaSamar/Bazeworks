@@ -13,6 +13,7 @@ import { WorkspacesModule } from './workspaces/workspaces.module';
 import { WebsitesModule } from './websites/websites.module';
 import { TemplatesModule } from './templates/templates.module';
 import { PagesModule } from './pages/pages.module';
+import { CollectionsModule } from './collections/collections.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { PagesModule } from './pages/pages.module';
     WebsitesModule,
     TemplatesModule,
     PagesModule,
+    CollectionsModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

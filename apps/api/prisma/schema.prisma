@@ -136,7 +136,8 @@ model Website {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  pages Page[]
+  pages       Page[]
+  collections Collection[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -163,6 +164,67 @@ model Page {
   @@unique([websiteId, slug])
   @@index([websiteId])
   @@map("page")
+}
+
+enum CollectionFieldType {
+  TEXT
+  TEXTAREA
+  RICH_TEXT
+  NUMBER
+  BOOLEAN
+  DATE
+  DATE_TIME
+  IMAGE
+  FILE
+  URL
+  EMAIL
+  SELECT
+  MULTI_SELECT
+  RELATION
+}
+
+model Collection {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  fields CollectionField[] @relation("CollectionFields")
+
+  // Other collections' relation-type fields that point at this collection —
+  // named separately from `fields` since both relations target Collection.
+  incomingRelationFields CollectionField[] @relation("CollectionFieldRelation")
+
+  @@unique([websiteId, slug])
+  @@index([websiteId])
+  @@map("collection")
+}
+
+model CollectionField {
+  id        String              @id @default(cuid())
+  name      String
+  key       String
+  type      CollectionFieldType
+  required  Boolean             @default(false)
+  options   Json                @default("[]")
+  order     Int                 @default(0)
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+
+  collectionId String
+  collection   Collection @relation("CollectionFields", fields: [collectionId], references: [id], onDelete: Cascade)
+
+  relatedCollectionId String?
+  relatedCollection   Collection? @relation("CollectionFieldRelation", fields: [relatedCollectionId], references: [id])
+
+  @@unique([collectionId, key])
+  @@index([collectionId])
+  @@index([relatedCollectionId])
+  @@map("collection_field")
 }
 
 model Template {
