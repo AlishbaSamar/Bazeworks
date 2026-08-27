@@ -99,6 +99,33 @@ export default function CollectionEntriesPage() {
     };
   }, [activeWorkspace.id, params.websiteId, params.collectionId, currentCursor, debouncedQ]);
 
+  // Re-fetches whichever page is currently on screen from the server, so the
+  // 25-item limit and nextCursor stay correct after a create/edit/delete —
+  // splicing the change into local state directly would let the list grow
+  // past the page size and would leave nextCursor stale.
+  async function refetchCurrentPage() {
+    setEntriesLoading(true);
+    setEntriesError(null);
+    try {
+      const page = await collectionsApi.listEntries(activeWorkspace.id, params.websiteId, params.collectionId, {
+        cursor: currentCursor,
+        limit: PAGE_SIZE,
+        q: debouncedQ || undefined,
+      });
+      if (page.entries.length === 0 && pageIndex > 0) {
+        // this page emptied out (e.g. its only entry was just deleted) — step back
+        setPageIndex((i) => Math.max(0, i - 1));
+        return;
+      }
+      setEntries(page.entries);
+      setNextCursor(page.nextCursor);
+    } catch {
+      setEntriesError("Couldn't load entries.");
+    } finally {
+      setEntriesLoading(false);
+    }
+  }
+
   function goNext() {
     if (!nextCursor) return;
     setCursorHistory((prev) => {
@@ -113,20 +140,17 @@ export default function CollectionEntriesPage() {
     setPageIndex((i) => Math.max(0, i - 1));
   }
 
-  function handleEntrySaved(entry: CollectionEntry) {
-    setEntries((prev) => {
-      const exists = prev.some((e) => e.id === entry.id);
-      return exists ? prev.map((e) => (e.id === entry.id ? entry : e)) : [entry, ...prev];
-    });
+  function handleEntrySaved() {
     setShowAddEntry(false);
     setEditingEntry(null);
+    void refetchCurrentPage();
   }
 
   async function handleDeleteEntry() {
     if (!deletingEntry) return;
     await collectionsApi.removeEntry(activeWorkspace.id, params.websiteId, params.collectionId, deletingEntry.id);
-    setEntries((prev) => prev.filter((e) => e.id !== deletingEntry.id));
     setDeletingEntry(null);
+    await refetchCurrentPage();
   }
 
   if (collectionError) {
