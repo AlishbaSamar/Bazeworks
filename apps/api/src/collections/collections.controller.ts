@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { Session } from '@thallesp/nestjs-better-auth';
@@ -14,6 +15,8 @@ import { CreateCollectionDto } from './dto/create-collection.dto';
 import { RenameCollectionDto } from './dto/rename-collection.dto';
 import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
+import { CreateEntryDto } from './dto/create-entry.dto';
+import { UpdateEntryDto } from './dto/update-entry.dto';
 import { WorkspaceRoleGuard } from '../workspaces/guards/workspace-role.guard';
 import { RequireWorkspaceRole } from '../workspaces/decorators/require-workspace-role.decorator';
 
@@ -142,6 +145,95 @@ export class CollectionsController {
       websiteId,
       collectionId,
       fieldId,
+    );
+  }
+
+  @Get(':collectionId/entries')
+  listEntries(
+    @Session() session: AuthSession,
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Query('cursor') cursor?: string,
+    @Query('limit') limit?: string,
+    @Query('q') q?: string,
+  ) {
+    return this.collectionsService.listEntries(
+      workspaceId,
+      websiteId,
+      collectionId,
+      session.user.id,
+      { cursor, limit: limit ? Number(limit) : undefined, q },
+    );
+  }
+
+  @Get(':collectionId/entries/:entryId')
+  getEntry(
+    @Session() session: AuthSession,
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Param('entryId') entryId: string,
+  ) {
+    return this.collectionsService.getEntry(
+      workspaceId,
+      websiteId,
+      collectionId,
+      entryId,
+      session.user.id,
+    );
+  }
+
+  @Post(':collectionId/entries')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  createEntry(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Body() dto: CreateEntryDto,
+  ) {
+    return this.collectionsService.createEntry(
+      workspaceId,
+      websiteId,
+      collectionId,
+      dto.data,
+    );
+  }
+
+  @Patch(':collectionId/entries/:entryId')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  updateEntry(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: UpdateEntryDto,
+  ) {
+    return this.collectionsService.updateEntry(
+      workspaceId,
+      websiteId,
+      collectionId,
+      entryId,
+      dto.data,
+    );
+  }
+
+  @Delete(':collectionId/entries/:entryId')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  removeEntry(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Param('entryId') entryId: string,
+  ) {
+    return this.collectionsService.removeEntry(
+      workspaceId,
+      websiteId,
+      collectionId,
+      entryId,
     );
   }
 }

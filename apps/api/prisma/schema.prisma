@@ -193,7 +193,8 @@ model Collection {
   websiteId String
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 
-  fields CollectionField[] @relation("CollectionFields")
+  fields  CollectionField[] @relation("CollectionFields")
+  entries CollectionEntry[]
 
   // Other collections' relation-type fields that point at this collection —
   // named separately from `fields` since both relations target Collection.
@@ -225,6 +226,20 @@ model CollectionField {
   @@index([collectionId])
   @@index([relatedCollectionId])
   @@map("collection_field")
+}
+
+model CollectionEntry {
+  id        String   @id @default(cuid())
+  data      Json     @default("{}")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  collectionId String
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@index([collectionId])
+  @@index([collectionId, createdAt])
+  @@map("collection_entry")
 }
 
 model Template {

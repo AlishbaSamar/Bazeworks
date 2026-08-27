@@ -80,6 +80,42 @@ export interface FieldInput {
   relatedCollectionId?: string;
 }
 
+export interface CollectionEntry {
+  id: string;
+  collectionId: string;
+  data: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface EntriesPage {
+  entries: CollectionEntry[];
+  nextCursor: string | null;
+}
+
+export interface ListEntriesParams {
+  cursor?: string;
+  limit?: number;
+  q?: string;
+}
+
+const TEXT_LIKE_FIELD_TYPES: FieldType[] = ["TEXT", "TEXTAREA", "RICH_TEXT", "EMAIL", "URL"];
+
+export function getEntryLabel(fields: CollectionField[], entry: CollectionEntry): string {
+  const textField = fields.find(
+    (f) => TEXT_LIKE_FIELD_TYPES.includes(f.type) && typeof entry.data[f.key] === "string" && entry.data[f.key],
+  );
+  if (textField) return String(entry.data[textField.key]);
+
+  const anyField = fields.find((f) => {
+    const value = entry.data[f.key];
+    return value !== undefined && value !== null && typeof value !== "object";
+  });
+  if (anyField) return String(entry.data[anyField.key]);
+
+  return "Untitled entry";
+}
+
 function base(workspaceId: string, websiteId: string) {
   return `/workspaces/${workspaceId}/websites/${websiteId}/collections`;
 }
@@ -110,4 +146,41 @@ export const collectionsApi = {
     ),
   removeField: (workspaceId: string, websiteId: string, collectionId: string, fieldId: string) =>
     apiClient.delete<{ id: string }>(`${base(workspaceId, websiteId)}/${collectionId}/fields/${fieldId}`),
+  listEntries: (
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    params?: ListEntriesParams,
+  ) => {
+    const search = new URLSearchParams();
+    if (params?.cursor) search.set("cursor", params.cursor);
+    if (params?.limit) search.set("limit", String(params.limit));
+    if (params?.q) search.set("q", params.q);
+    const qs = search.toString();
+    return apiClient.get<EntriesPage>(
+      `${base(workspaceId, websiteId)}/${collectionId}/entries${qs ? `?${qs}` : ""}`,
+    );
+  },
+  getEntry: (workspaceId: string, websiteId: string, collectionId: string, entryId: string) =>
+    apiClient.get<CollectionEntry>(`${base(workspaceId, websiteId)}/${collectionId}/entries/${entryId}`),
+  createEntry: (
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    data: Record<string, unknown>,
+  ) =>
+    apiClient.post<CollectionEntry>(`${base(workspaceId, websiteId)}/${collectionId}/entries`, { data }),
+  updateEntry: (
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+    data: Record<string, unknown>,
+  ) =>
+    apiClient.patch<CollectionEntry>(
+      `${base(workspaceId, websiteId)}/${collectionId}/entries/${entryId}`,
+      { data },
+    ),
+  removeEntry: (workspaceId: string, websiteId: string, collectionId: string, entryId: string) =>
+    apiClient.delete<{ id: string }>(`${base(workspaceId, websiteId)}/${collectionId}/entries/${entryId}`),
 };

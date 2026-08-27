@@ -4,11 +4,20 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
+import { CollectionField, Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import type { FieldType } from './dto/create-field.dto';
 
 const MAX_SLUG_ATTEMPTS = 5;
+const DEFAULT_ENTRY_PAGE_SIZE = 25;
+const MAX_ENTRY_PAGE_SIZE = 100;
+const TEXT_LIKE_FIELD_TYPES: FieldType[] = [
+  'TEXT',
+  'TEXTAREA',
+  'RICH_TEXT',
+  'EMAIL',
+  'URL',
+];
 
 interface FieldInput {
   name: string;
@@ -29,12 +38,12 @@ export class CollectionsService {
     const collections = await this.prisma.collection.findMany({
       where: { websiteId },
       orderBy: { createdAt: 'asc' },
-      include: { _count: { select: { fields: true } } },
+      include: { _count: { select: { fields: true, entries: true } } },
     });
     return collections.map(({ _count, ...collection }) => ({
       ...collection,
       fieldCount: _count.fields,
-      entryCount: 0, // entries land on Day 8
+      entryCount: _count.entries,
     }));
   }
 
@@ -188,6 +197,133 @@ export class CollectionsService {
     return { id: fieldId };
   }
 
+  async listEntries(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    userId: string,
+    options: { cursor?: string; limit?: number; q?: string },
+  ) {
+    await this.requireMembership(workspaceId, userId);
+    const collection = await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+      { fields: true },
+    );
+
+    const take = Math.min(
+      Math.max(options.limit ?? DEFAULT_ENTRY_PAGE_SIZE, 1),
+      MAX_ENTRY_PAGE_SIZE,
+    );
+
+    const where: Prisma.CollectionEntryWhereInput = { collectionId };
+    const q = options.q?.trim();
+    if (q) {
+      const textKeys = collection.fields
+        .filter((field) => TEXT_LIKE_FIELD_TYPES.includes(field.type))
+        .map((field) => field.key);
+      if (textKeys.length === 0) {
+        // No text-like fields to search — return an empty page rather than
+        // silently ignoring the search term and showing unfiltered results.
+        return { entries: [], nextCursor: null };
+      }
+      where.OR = textKeys.map((key) => ({
+        data: {
+          path: [key],
+          string_contains: q,
+          mode: 'insensitive',
+        },
+      }));
+    }
+
+    const rows = await this.prisma.collectionEntry.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      take: take + 1,
+      ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
+    });
+
+    const hasMore = rows.length > take;
+    const entries = hasMore ? rows.slice(0, take) : rows;
+
+    return {
+      entries,
+      nextCursor: hasMore ? entries[entries.length - 1].id : null,
+    };
+  }
+
+  async getEntry(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+    userId: string,
+  ) {
+    await this.requireMembership(workspaceId, userId);
+    await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+    );
+    return this.requireEntryInCollection(entryId, collectionId);
+  }
+
+  async createEntry(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    data: Record<string, unknown>,
+  ) {
+    const collection = await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+      { fields: true },
+    );
+    const cleaned = await this.validateEntryData(collection.fields, data);
+    return this.prisma.collectionEntry.create({
+      data: { collectionId, data: cleaned as Prisma.InputJsonValue },
+    });
+  }
+
+  async updateEntry(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+    data: Record<string, unknown>,
+  ) {
+    const collection = await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+      { fields: true },
+    );
+    await this.requireEntryInCollection(entryId, collectionId);
+    const cleaned = await this.validateEntryData(collection.fields, data);
+    return this.prisma.collectionEntry.update({
+      where: { id: entryId },
+      data: { data: cleaned as Prisma.InputJsonValue },
+    });
+  }
+
+  async removeEntry(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+  ) {
+    await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+    );
+    await this.requireEntryInCollection(entryId, collectionId);
+    await this.prisma.collectionEntry.delete({ where: { id: entryId } });
+    return { id: entryId };
+  }
+
   private async requireMembership(workspaceId: string, userId: string) {
     const membership = await this.prisma.workspaceMember.findUnique({
       where: { userId_workspaceId: { userId, workspaceId } },
@@ -248,6 +384,151 @@ export class CollectionsService {
       throw new NotFoundException('Field not found');
     }
     return field;
+  }
+
+  private async requireEntryInCollection(
+    entryId: string,
+    collectionId: string,
+  ) {
+    const entry = await this.prisma.collectionEntry.findUnique({
+      where: { id: entryId },
+    });
+    if (!entry || entry.collectionId !== collectionId) {
+      throw new NotFoundException('Entry not found');
+    }
+    return entry;
+  }
+
+  private async validateEntryData(
+    fields: CollectionField[],
+    rawData: Record<string, unknown>,
+  ): Promise<Record<string, unknown>> {
+    const errors: string[] = [];
+    const cleaned: Record<string, unknown> = {};
+
+    for (const field of fields) {
+      const value = rawData[field.key];
+      const isEmpty =
+        value === undefined ||
+        value === null ||
+        (typeof value === 'string' && value.trim() === '') ||
+        (Array.isArray(value) && value.length === 0);
+
+      if (isEmpty) {
+        if (field.required) errors.push(`${field.name} is required`);
+        continue;
+      }
+
+      switch (field.type) {
+        case 'TEXT':
+        case 'TEXTAREA':
+        case 'RICH_TEXT':
+        case 'IMAGE':
+        case 'FILE':
+          if (typeof value !== 'string') {
+            errors.push(`${field.name} must be text`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+
+        case 'URL':
+          if (typeof value !== 'string' || !/^https?:\/\/.+/i.test(value)) {
+            errors.push(`${field.name} must be a valid URL`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+
+        case 'EMAIL':
+          if (
+            typeof value !== 'string' ||
+            !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value)
+          ) {
+            errors.push(`${field.name} must be a valid email address`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+
+        case 'NUMBER': {
+          const num = typeof value === 'number' ? value : Number(value);
+          if (!Number.isFinite(num)) {
+            errors.push(`${field.name} must be a number`);
+            break;
+          }
+          cleaned[field.key] = num;
+          break;
+        }
+
+        case 'BOOLEAN':
+          if (typeof value !== 'boolean') {
+            errors.push(`${field.name} must be true or false`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+
+        case 'DATE':
+        case 'DATE_TIME': {
+          const date = new Date(value as string);
+          if (Number.isNaN(date.getTime())) {
+            errors.push(`${field.name} must be a valid date`);
+            break;
+          }
+          cleaned[field.key] = date.toISOString();
+          break;
+        }
+
+        case 'SELECT': {
+          const options = Array.isArray(field.options)
+            ? (field.options as string[])
+            : [];
+          if (typeof value !== 'string' || !options.includes(value)) {
+            errors.push(`${field.name} must be one of its defined options`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+        }
+
+        case 'MULTI_SELECT': {
+          const options = Array.isArray(field.options)
+            ? (field.options as string[])
+            : [];
+          if (
+            !Array.isArray(value) ||
+            !value.every((v) => typeof v === 'string' && options.includes(v))
+          ) {
+            errors.push(`${field.name} must only contain its defined options`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+        }
+
+        case 'RELATION': {
+          if (typeof value !== 'string') {
+            errors.push(`${field.name} must reference a single entry`);
+            break;
+          }
+          const target = await this.prisma.collectionEntry.findUnique({
+            where: { id: value },
+          });
+          if (!target || target.collectionId !== field.relatedCollectionId) {
+            errors.push(`${field.name} references an entry that doesn't exist`);
+            break;
+          }
+          cleaned[field.key] = value;
+          break;
+        }
+      }
+    }
+
+    if (errors.length > 0) {
+      throw new BadRequestException(errors.join('; '));
+    }
+    return cleaned;
   }
 
   private async requireRelationTargetInWebsite(

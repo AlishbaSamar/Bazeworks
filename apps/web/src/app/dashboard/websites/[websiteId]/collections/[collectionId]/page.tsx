@@ -133,14 +133,21 @@ export default function CollectionFieldsPage() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">/{collection.slug}</p>
         </div>
-        {canManage && (
-          <Button className="w-auto px-4" onClick={() => setShowAddField(true)}>
-            <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-              <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
-            </svg>
-            Add Field
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <Link href={`/dashboard/websites/${params.websiteId}/collections/${params.collectionId}/entries`}>
+            <Button variant="secondary" className="w-auto px-4">
+              View Entries
+            </Button>
+          </Link>
+          {canManage && (
+            <Button className="w-auto px-4" onClick={() => setShowAddField(true)}>
+              <svg className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" />
+              </svg>
+              Add Field
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="mt-6 rounded-xl border border-border bg-surface p-5 shadow-sm">

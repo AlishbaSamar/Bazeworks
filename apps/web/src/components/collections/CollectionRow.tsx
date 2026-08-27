@@ -81,6 +81,13 @@ export function CollectionRow({
               >
                 Manage fields
               </Link>
+              <Link
+                href={`${href}/entries`}
+                onClick={() => setMenuOpen(false)}
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
+              >
+                View entries
+              </Link>
               <button
                 type="button"
                 onClick={() => {
