@@ -208,6 +208,7 @@ export class CollectionsService {
       q?: string;
       status?: 'DRAFT' | 'PUBLISHED';
       order?: 'asc' | 'desc';
+      sort?: 'createdAt' | 'updatedAt';
     },
   ) {
     await this.requireMembership(workspaceId, userId);
@@ -245,9 +246,12 @@ export class CollectionsService {
     }
 
     const order = options.order === 'asc' ? 'asc' : 'desc';
+    const sortField = options.sort === 'updatedAt' ? 'updatedAt' : 'createdAt';
     const rows = await this.prisma.collectionEntry.findMany({
       where,
-      orderBy: [{ createdAt: order }, { id: order }],
+      // `id` is the tiebreaker so the cursor stays stable when two entries
+      // share a timestamp.
+      orderBy: [{ [sortField]: order }, { id: order }],
       take: take + 1,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });

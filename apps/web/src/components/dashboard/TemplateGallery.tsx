@@ -8,9 +8,11 @@ import { FormBanner } from "@/components/ui/FormBanner";
 export function TemplateGallery({
   onSelect,
   disabled,
+  workspaceId,
 }: {
   onSelect: (template: Template) => void;
   disabled?: boolean;
+  workspaceId?: string;
 }) {
   const [templates, setTemplates] = useState<Template[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -19,12 +21,12 @@ export function TemplateGallery({
 
   useEffect(() => {
     templatesApi
-      .list()
+      .list(workspaceId)
       .then(setTemplates)
       .catch((err) => {
         setError(err instanceof ApiError ? err.message : "Couldn't load templates.");
       });
-  }, []);
+  }, [workspaceId]);
 
   const categories = useMemo(() => {
     if (!templates) return ["All"];
@@ -109,12 +111,25 @@ export function TemplateGallery({
               <div className="flex w-full flex-col gap-2 px-4 pb-4">
                 <div className="flex w-full items-center justify-between gap-2">
                   <span className="truncate text-sm font-semibold text-foreground">{template.name}</span>
-                  <span className="shrink-0 rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
-                    {template.category}
+                  <span className="flex shrink-0 items-center gap-1">
+                    {!template.isOfficial && (
+                      <span className="rounded-full bg-primary/10 px-2 py-0.5 text-xs font-medium text-primary">
+                        Custom
+                      </span>
+                    )}
+                    <span className="rounded-full border border-border bg-background px-2 py-0.5 text-xs font-medium text-muted-foreground">
+                      {template.category}
+                    </span>
                   </span>
                 </div>
                 <p className="text-sm text-muted-foreground">{template.description}</p>
-                <p className="text-xs font-medium text-muted-foreground">{template.pageCount} pages</p>
+                <p className="text-xs font-medium text-muted-foreground">
+                  {template.pageCount} {template.pageCount === 1 ? "page" : "pages"}
+                  {template.collectionCount > 0 &&
+                    ` · ${template.collectionCount} ${
+                      template.collectionCount === 1 ? "collection" : "collections"
+                    }`}
+                </p>
               </div>
             </button>
           ))}

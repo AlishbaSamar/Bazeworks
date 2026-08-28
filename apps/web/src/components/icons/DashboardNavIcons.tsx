@@ -41,6 +41,16 @@ export function CollectionsIcon() {
   );
 }
 
+export function MembersIcon() {
+  return (
+    <svg className={BASE} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">
+      <circle cx="9" cy="8" r="3.25" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3.5 19c0-3 2.46-5 5.5-5s5.5 2 5.5 5" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M16 5.5a3 3 0 010 5.5M17 19c0-2.4-1-4.2-2.5-5" />
+    </svg>
+  );
+}
+
 export function MediaIcon() {
   return (
     <svg className={BASE} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" aria-hidden="true">

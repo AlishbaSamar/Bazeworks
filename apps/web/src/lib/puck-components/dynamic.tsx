@@ -251,8 +251,12 @@ export interface RelatedPostsProps {
 function RelatedPostsRender({ source, heading, limit, excludeEntry }: RelatedPostsProps) {
   // Fetch one extra so excluding the "preview against" entry still leaves `limit` cards.
   const { entries, fields, loading } = useEntries(source, { limit: limit + 1, order: "desc", publishedOnly: true });
+  const { previewEntry } = useEditorRoute();
   if (!source) return <EmptyState message="Choose a collection in the properties panel." />;
-  const filtered = entries.filter((e) => e.id !== excludeEntry?.entryId).slice(0, limit);
+  // On a resolved dynamic route the current entry is what we exclude; the
+  // editor's "preview against" pick is only a stand-in for that.
+  const excludeId = previewEntry?.entryId || excludeEntry?.entryId;
+  const filtered = entries.filter((e) => e.id !== excludeId).slice(0, limit);
   return <CardGrid heading={heading} loading={loading} entries={filtered} fields={fields} emptyMessage="No other entries to relate yet." />;
 }
 
@@ -281,8 +285,13 @@ export interface CollectionItemProps {
 }
 
 function CollectionItemRender({ entry: picked }: CollectionItemProps) {
-  const { entry, fields, loading } = useSingleEntry(picked?.collectionId ?? "", picked?.entryId ?? "");
-  if (!picked?.collectionId || !picked?.entryId) {
+  const { previewEntry } = useEditorRoute();
+  // A resolved dynamic route (/blog/[slug]) supplies the real entry; the
+  // editor falls back to the "preview entry" picked in the properties panel.
+  const collectionId = previewEntry?.collectionId || picked?.collectionId || "";
+  const entryId = previewEntry?.entryId || picked?.entryId || "";
+  const { entry, fields, loading } = useSingleEntry(collectionId, entryId);
+  if (!collectionId || !entryId) {
     return <EmptyState message="Pick an entry to preview in the properties panel." />;
   }
   if (loading) {

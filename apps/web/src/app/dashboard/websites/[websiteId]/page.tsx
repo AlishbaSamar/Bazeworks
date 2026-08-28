@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CreatePageModal } from "@/components/website/CreatePageModal";
 import { RenamePageDialog } from "@/components/website/RenamePageDialog";
 import { DynamicPageModal } from "@/components/website/DynamicPageModal";
+import { SaveAsTemplateDialog } from "@/components/website/SaveAsTemplateDialog";
 import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
@@ -40,8 +41,11 @@ export default function WebsiteOverviewPage() {
   const [renamingPage, setRenamingPage] = useState<Page | null>(null);
   const [deletingPage, setDeletingPage] = useState<Page | null>(null);
   const [configuringDynamicPage, setConfiguringDynamicPage] = useState<Page | null>(null);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateNotice, setTemplateNotice] = useState<string | null>(null);
 
   const canManage = activeWorkspace.role !== "VIEWER";
+  const previewHref = `/preview/${activeWorkspace.id}/${params.websiteId}`;
 
   useEffect(() => {
     let cancelled = false;
@@ -159,10 +163,27 @@ export default function WebsiteOverviewPage() {
           </div>
           <p className="mt-1 text-sm text-muted-foreground">{website.slug}</p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" className="w-auto px-4" disabled title="Coming Day 8">
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href={previewHref}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 w-auto items-center justify-center gap-1.5 rounded-md border border-border bg-white px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-border-strong hover:bg-background"
+          >
+            <svg className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+              <path d="M10 4c-3.6 0-6.7 2.1-8 5 1.3 2.9 4.4 5 8 5s6.7-2.1 8-5c-1.3-2.9-4.4-5-8-5zm0 8a3 3 0 110-6 3 3 0 010 6z" />
+            </svg>
             Preview
-          </Button>
+          </Link>
+          {canManage && (
+            <Button
+              variant="secondary"
+              className="w-auto px-4"
+              onClick={() => setShowSaveTemplate(true)}
+            >
+              Save as template
+            </Button>
+          )}
           <Button variant="secondary" className="w-auto px-4" disabled title="Coming Day 11">
             Publish Draft
           </Button>
@@ -171,6 +192,12 @@ export default function WebsiteOverviewPage() {
           </Button>
         </div>
       </div>
+
+      {templateNotice && (
+        <div className="mt-4">
+          <FormBanner variant="success">{templateNotice}</FormBanner>
+        </div>
+      )}
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div className="rounded-xl border border-border bg-surface p-5 shadow-sm">
@@ -288,6 +315,19 @@ export default function WebsiteOverviewPage() {
           page={configuringDynamicPage}
           onClose={() => setConfiguringDynamicPage(null)}
           onSave={handleSaveDynamicBinding}
+        />
+      )}
+
+      {showSaveTemplate && (
+        <SaveAsTemplateDialog
+          workspaceId={activeWorkspace.id}
+          websiteId={website.id}
+          defaultName={website.name}
+          onClose={() => setShowSaveTemplate(false)}
+          onSaved={(templateName) => {
+            setShowSaveTemplate(false);
+            setTemplateNotice(`Saved "${templateName}" to your workspace templates.`);
+          }}
         />
       )}
 

@@ -30,6 +30,15 @@ export default function CollectionEntriesPage() {
 
   const [searchInput, setSearchInput] = useState("");
   const [debouncedQ, setDebouncedQ] = useState("");
+  const [statusFilter, setStatusFilter] = useState<"ALL" | "PUBLISHED" | "DRAFT">("ALL");
+  const [sort, setSort] = useState<"newest" | "oldest" | "recently-updated">("newest");
+
+  const sortParams =
+    sort === "oldest"
+      ? { sort: "createdAt" as const, order: "asc" as const }
+      : sort === "recently-updated"
+        ? { sort: "updatedAt" as const, order: "desc" as const }
+        : { sort: "createdAt" as const, order: "desc" as const };
 
   const [showAddEntry, setShowAddEntry] = useState(false);
   const [editingEntry, setEditingEntry] = useState<CollectionEntry | null>(null);
@@ -66,6 +75,19 @@ export default function CollectionEntriesPage() {
     return () => clearTimeout(timeout);
   }, [searchInput]);
 
+  // Changing a filter or the sort invalidates the cursor stack — restart at page 1.
+  useEffect(() => {
+    let cancelled = false;
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setCursorHistory([undefined]);
+      setPageIndex(0);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [statusFilter, sort]);
+
   const currentCursor = cursorHistory[pageIndex];
 
   useEffect(() => {
@@ -81,6 +103,8 @@ export default function CollectionEntriesPage() {
         cursor: currentCursor,
         limit: PAGE_SIZE,
         q: debouncedQ || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+        ...sortParams,
       })
       .then((page) => {
         if (cancelled) return;
@@ -97,7 +121,16 @@ export default function CollectionEntriesPage() {
     return () => {
       cancelled = true;
     };
-  }, [activeWorkspace.id, params.websiteId, params.collectionId, currentCursor, debouncedQ]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [
+    activeWorkspace.id,
+    params.websiteId,
+    params.collectionId,
+    currentCursor,
+    debouncedQ,
+    statusFilter,
+    sort,
+  ]);
 
   // Re-fetches whichever page is currently on screen from the server, so the
   // 25-item limit and nextCursor stay correct after a create/edit/delete —
@@ -111,6 +144,8 @@ export default function CollectionEntriesPage() {
         cursor: currentCursor,
         limit: PAGE_SIZE,
         q: debouncedQ || undefined,
+        status: statusFilter === "ALL" ? undefined : statusFilter,
+        ...sortParams,
       });
       if (page.entries.length === 0 && pageIndex > 0) {
         // this page emptied out (e.g. its only entry was just deleted) — step back
@@ -218,14 +253,36 @@ export default function CollectionEntriesPage() {
         </div>
       ) : (
         <div className="mt-6 rounded-xl border border-border bg-surface p-5 shadow-sm">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Entries</p>
-            <input
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              placeholder="Search…"
-              className="h-9 w-full max-w-xs rounded-md border border-border bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <div className="flex flex-wrap items-center gap-2">
+              <input
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                placeholder="Search…"
+                className="h-9 w-full max-w-xs rounded-md border border-border bg-white px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <select
+                aria-label="Filter by status"
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="h-9 rounded-md border border-border bg-white px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="ALL">All statuses</option>
+                <option value="PUBLISHED">Published</option>
+                <option value="DRAFT">Draft</option>
+              </select>
+              <select
+                aria-label="Sort entries"
+                value={sort}
+                onChange={(e) => setSort(e.target.value as typeof sort)}
+                className="h-9 rounded-md border border-border bg-white px-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="newest">Newest first</option>
+                <option value="oldest">Oldest first</option>
+                <option value="recently-updated">Recently updated</option>
+              </select>
+            </div>
           </div>
 
           {entriesError && (
@@ -239,14 +296,16 @@ export default function CollectionEntriesPage() {
           ) : entries.length === 0 ? (
             <div className="mt-3 flex flex-col items-center justify-center rounded-lg border border-dashed border-border-strong py-14 text-center">
               <p className="text-sm font-medium text-foreground">
-                {debouncedQ ? "No entries match your search" : "No entries yet"}
+                {debouncedQ || statusFilter !== "ALL"
+                  ? "No entries match your filters"
+                  : "No entries yet"}
               </p>
-              {!debouncedQ && (
+              {!debouncedQ && statusFilter === "ALL" && (
                 <p className="mt-1 max-w-sm text-sm text-muted-foreground">
                   Add your first entry to start filling this collection with content.
                 </p>
               )}
-              {canManage && !debouncedQ && (
+              {canManage && !debouncedQ && statusFilter === "ALL" && (
                 <Button className="mt-5 w-auto px-4" onClick={() => setShowAddEntry(true)}>
                   Add Entry
                 </Button>

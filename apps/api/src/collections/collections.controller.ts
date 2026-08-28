@@ -160,13 +160,21 @@ export class CollectionsController {
     @Query('q') q?: string,
     @Query('status') status?: 'DRAFT' | 'PUBLISHED',
     @Query('order') order?: 'asc' | 'desc',
+    @Query('sort') sort?: 'createdAt' | 'updatedAt',
   ) {
     return this.collectionsService.listEntries(
       workspaceId,
       websiteId,
       collectionId,
       session.user.id,
-      { cursor, limit: limit ? Number(limit) : undefined, q, status, order },
+      {
+        cursor,
+        limit: limit ? Number(limit) : undefined,
+        q,
+        status,
+        order,
+        sort,
+      },
     );
   }
 

@@ -128,6 +128,7 @@ export function CreateWebsiteModal({
           ) : (
             <TemplateGallery
               disabled={loading}
+              workspaceId={workspaceId}
               onSelect={(template: Template) => create({ name: template.name, templateId: template.id })}
             />
           )}

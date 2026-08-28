@@ -3,6 +3,15 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { collectionsApi, type Collection } from "./collections";
 
+/** The collection entry a dynamic route resolved to, when the tree is being
+ * rendered for a URL like /blog/hello-world. Dynamic components (CollectionItem,
+ * RelatedPosts) fall back to this when their own entry prop is unset, so the
+ * same page content renders the right entry per URL. `null` in the editor. */
+export interface PreviewEntryRef {
+  collectionId: string;
+  entryId: string;
+}
+
 interface EditorRouteContextValue {
   workspaceId: string;
   websiteId: string;
@@ -10,6 +19,7 @@ interface EditorRouteContextValue {
    * every dynamic-content component's config picker can list them instantly
    * without each one re-fetching independently. */
   collections: Collection[];
+  previewEntry: PreviewEntryRef | null;
 }
 
 const EditorRouteContext = createContext<EditorRouteContextValue | null>(null);
@@ -17,10 +27,12 @@ const EditorRouteContext = createContext<EditorRouteContextValue | null>(null);
 export function EditorRouteProvider({
   workspaceId,
   websiteId,
+  previewEntry = null,
   children,
 }: {
   workspaceId: string;
   websiteId: string;
+  previewEntry?: PreviewEntryRef | null;
   children: React.ReactNode;
 }) {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -39,7 +51,9 @@ export function EditorRouteProvider({
   }, [workspaceId, websiteId]);
 
   return (
-    <EditorRouteContext.Provider value={{ workspaceId, websiteId, collections }}>
+    <EditorRouteContext.Provider
+      value={{ workspaceId, websiteId, collections, previewEntry }}
+    >
       {children}
     </EditorRouteContext.Provider>
   );

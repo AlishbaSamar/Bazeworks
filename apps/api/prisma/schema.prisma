@@ -1,4 +1,3 @@
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -89,8 +88,9 @@ model Workspace {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  members  WorkspaceMember[]
-  websites Website[]
+  members   WorkspaceMember[]
+  websites  Website[]
+  templates Template[]
 
   @@map("workspace")
 }
@@ -154,6 +154,7 @@ model Page {
   name      String
   slug      String
   status    PageStatus @default(DRAFT)
+  order     Int        @default(0)
   content   Json       @default("{\"content\":[],\"root\":{}}")
   createdAt DateTime   @default(now())
   updatedAt DateTime   @updatedAt
@@ -164,7 +165,7 @@ model Page {
   // A dynamic page renders one collection entry per URL — e.g. a page with
   // slug "blog" and dynamicSlugField "slug" resolves "/blog/hello-world" by
   // looking up the entry in dynamicCollection whose data.slug === "hello-world".
-  isDynamic          Boolean @default(false)
+  isDynamic           Boolean     @default(false)
   dynamicCollectionId String?
   dynamicCollection   Collection? @relation(fields: [dynamicCollectionId], references: [id], onDelete: SetNull)
   dynamicSlugField    String?
@@ -257,29 +258,78 @@ model CollectionEntry {
   @@map("collection_entry")
 }
 
+enum TemplateKind {
+  SITE
+  PAGE
+}
+
 model Template {
-  id          String   @id @default(cuid())
+  id          String       @id @default(cuid())
   name        String
-  slug        String   @unique
+  slug        String       @unique
   description String
   category    String
-  isOfficial  Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  kind        TemplateKind @default(SITE)
+  isOfficial  Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
 
-  pages TemplatePage[]
+  // Null for official templates maintained by platform admins. Set when a
+  // user saves one of their own websites (or pages) as a reusable template —
+  // those are only visible inside the owning workspace.
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById String?
 
+  // Snapshot of the source website's design, copied verbatim into any new
+  // website created from this template.
+  theme        Json @default("{}")
+  globalHeader Json @default("{}")
+  globalFooter Json @default("{}")
+
+  pages       TemplatePage[]
+  collections TemplateCollection[]
+
+  @@index([workspaceId])
   @@map("template")
 }
 
 model TemplatePage {
-  id   String @id @default(cuid())
-  name String
-  slug String
+  id      String @id @default(cuid())
+  name    String
+  slug    String
+  order   Int    @default(0)
+  content Json   @default("{\"content\":[],\"root\":{}}")
+
+  // A template can't reference real Collection ids (they don't exist until a
+  // website is created from it), so a dynamic page's binding is stored by the
+  // template collection's slug and resolved to a real id during the copy.
+  isDynamic             Boolean @default(false)
+  dynamicCollectionSlug String?
+  dynamicSlugField      String?
 
   templateId String
   template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
 
   @@unique([templateId, slug])
   @@map("template_page")
+}
+
+model TemplateCollection {
+  id    String @id @default(cuid())
+  name  String
+  slug  String
+  order Int    @default(0)
+
+  // Field definitions as a JSON array — same shape the CMS field builder
+  // produces: { name, key, type, required, options, order, relatedCollectionSlug }.
+  fields  Json @default("[]")
+  // Sample entries as a JSON array: { data, status }.
+  entries Json @default("[]")
+
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+
+  @@unique([templateId, slug])
+  @@map("template_collection")
 }

@@ -7,6 +7,7 @@ export interface Workspace {
   name: string;
   slug: string;
   role: WorkspaceRole;
+  memberCount?: number;
   createdAt: string;
   updatedAt: string;
 }

@@ -102,6 +102,7 @@ export interface ListEntriesParams {
   q?: string;
   status?: EntryStatus;
   order?: "asc" | "desc";
+  sort?: "createdAt" | "updatedAt";
 }
 
 const TEXT_LIKE_FIELD_TYPES: FieldType[] = ["TEXT", "TEXTAREA", "RICH_TEXT", "EMAIL", "URL"];
@@ -170,6 +171,7 @@ export const collectionsApi = {
     if (params?.q) search.set("q", params.q);
     if (params?.status) search.set("status", params.status);
     if (params?.order) search.set("order", params.order);
+    if (params?.sort) search.set("sort", params.sort);
     const qs = search.toString();
     return apiClient.get<EntriesPage>(
       `${base(workspaceId, websiteId)}/${collectionId}/entries${qs ? `?${qs}` : ""}`,

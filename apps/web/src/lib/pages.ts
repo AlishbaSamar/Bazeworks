@@ -30,7 +30,7 @@ export interface DynamicBindingInput {
 }
 
 export interface ResolvedPage {
-  page: Page;
+  page: PageWithContent;
   entry: { id: string; collectionId: string; data: Record<string, unknown>; status: PageStatus };
 }
 

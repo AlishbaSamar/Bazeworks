@@ -29,15 +29,20 @@ const EDITOR_PLUGINS = [...THEME_PLUGINS, ...HEADER_FOOTER_PLUGINS];
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
 function EditorHeaderActions({
+  workspaceId,
   websiteId,
+  pageSlug,
   saveStatus,
   onSave,
 }: {
+  workspaceId: string;
   websiteId: string;
+  pageSlug: string;
   saveStatus: SaveStatus;
   onSave: (data: Data) => void;
 }) {
   const { appState } = usePuck();
+  const previewPath = pageSlug === "/" ? "" : pageSlug;
 
   return (
     <div className="flex items-center gap-3">
@@ -69,6 +74,14 @@ function EditorHeaderActions({
         </svg>
         Back to website
       </Link>
+      <a
+        href={`/preview/${workspaceId}/${websiteId}${previewPath}`}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="inline-flex h-9 items-center justify-center gap-1.5 rounded-md border border-border bg-white px-4 text-sm font-medium text-foreground transition-colors hover:bg-background"
+      >
+        Preview
+      </a>
       <button
         type="button"
         onClick={() => onSave(appState.data)}
@@ -288,7 +301,13 @@ export default function PageEditor() {
             plugins={EDITOR_PLUGINS}
             overrides={{
               headerActions: () => (
-                <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
+                <EditorHeaderActions
+                  workspaceId={params.workspaceId}
+                  websiteId={params.websiteId}
+                  pageSlug={page.slug}
+                  saveStatus={saveStatus}
+                  onSave={handleSave}
+                />
               ),
               drawer: SearchableDrawer,
               fields: TabbedFields,
