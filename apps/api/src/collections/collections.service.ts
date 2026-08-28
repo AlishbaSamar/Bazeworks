@@ -202,7 +202,13 @@ export class CollectionsService {
     websiteId: string,
     collectionId: string,
     userId: string,
-    options: { cursor?: string; limit?: number; q?: string },
+    options: {
+      cursor?: string;
+      limit?: number;
+      q?: string;
+      status?: 'DRAFT' | 'PUBLISHED';
+      order?: 'asc' | 'desc';
+    },
   ) {
     await this.requireMembership(workspaceId, userId);
     const collection = await this.requireCollectionInWebsiteInWorkspace(
@@ -218,6 +224,7 @@ export class CollectionsService {
     );
 
     const where: Prisma.CollectionEntryWhereInput = { collectionId };
+    if (options.status) where.status = options.status;
     const q = options.q?.trim();
     if (q) {
       const textKeys = collection.fields
@@ -237,9 +244,10 @@ export class CollectionsService {
       }));
     }
 
+    const order = options.order === 'asc' ? 'asc' : 'desc';
     const rows = await this.prisma.collectionEntry.findMany({
       where,
-      orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+      orderBy: [{ createdAt: order }, { id: order }],
       take: take + 1,
       ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
     });
@@ -322,6 +330,25 @@ export class CollectionsService {
     await this.requireEntryInCollection(entryId, collectionId);
     await this.prisma.collectionEntry.delete({ where: { id: entryId } });
     return { id: entryId };
+  }
+
+  async setEntryStatus(
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+    status: 'DRAFT' | 'PUBLISHED',
+  ) {
+    await this.requireCollectionInWebsiteInWorkspace(
+      workspaceId,
+      websiteId,
+      collectionId,
+    );
+    await this.requireEntryInCollection(entryId, collectionId);
+    return this.prisma.collectionEntry.update({
+      where: { id: entryId },
+      data: { status },
+    });
   }
 
   private async requireMembership(workspaceId: string, userId: string) {

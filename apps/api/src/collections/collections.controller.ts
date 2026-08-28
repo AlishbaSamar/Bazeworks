@@ -17,6 +17,7 @@ import { CreateFieldDto } from './dto/create-field.dto';
 import { UpdateFieldDto } from './dto/update-field.dto';
 import { CreateEntryDto } from './dto/create-entry.dto';
 import { UpdateEntryDto } from './dto/update-entry.dto';
+import { UpdateEntryStatusDto } from './dto/update-entry-status.dto';
 import { WorkspaceRoleGuard } from '../workspaces/guards/workspace-role.guard';
 import { RequireWorkspaceRole } from '../workspaces/decorators/require-workspace-role.decorator';
 
@@ -157,13 +158,15 @@ export class CollectionsController {
     @Query('cursor') cursor?: string,
     @Query('limit') limit?: string,
     @Query('q') q?: string,
+    @Query('status') status?: 'DRAFT' | 'PUBLISHED',
+    @Query('order') order?: 'asc' | 'desc',
   ) {
     return this.collectionsService.listEntries(
       workspaceId,
       websiteId,
       collectionId,
       session.user.id,
-      { cursor, limit: limit ? Number(limit) : undefined, q },
+      { cursor, limit: limit ? Number(limit) : undefined, q, status, order },
     );
   }
 
@@ -234,6 +237,25 @@ export class CollectionsController {
       websiteId,
       collectionId,
       entryId,
+    );
+  }
+
+  @Patch(':collectionId/entries/:entryId/status')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  setEntryStatus(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('collectionId') collectionId: string,
+    @Param('entryId') entryId: string,
+    @Body() dto: UpdateEntryStatusDto,
+  ) {
+    return this.collectionsService.setEntryStatus(
+      workspaceId,
+      websiteId,
+      collectionId,
+      entryId,
+      dto.status,
     );
   }
 }

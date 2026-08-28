@@ -8,10 +8,11 @@ import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
 import { CreatePageModal } from "@/components/website/CreatePageModal";
 import { RenamePageDialog } from "@/components/website/RenamePageDialog";
+import { DynamicPageModal } from "@/components/website/DynamicPageModal";
 import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
-import { pagesApi, type Page } from "@/lib/pages";
+import { pagesApi, type DynamicBindingInput, type Page } from "@/lib/pages";
 import { collectionsApi } from "@/lib/collections";
 import { useWorkspaceContext } from "@/lib/workspace-context";
 import { timeAgo } from "@/lib/format";
@@ -38,6 +39,7 @@ export default function WebsiteOverviewPage() {
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [renamingPage, setRenamingPage] = useState<Page | null>(null);
   const [deletingPage, setDeletingPage] = useState<Page | null>(null);
+  const [configuringDynamicPage, setConfiguringDynamicPage] = useState<Page | null>(null);
 
   const canManage = activeWorkspace.role !== "VIEWER";
 
@@ -105,6 +107,13 @@ export default function WebsiteOverviewPage() {
     await pagesApi.remove(activeWorkspace.id, params.websiteId, deletingPage.id);
     setPages((prev) => prev?.filter((p) => p.id !== deletingPage.id) ?? null);
     setDeletingPage(null);
+  }
+
+  async function handleSaveDynamicBinding(input: DynamicBindingInput) {
+    if (!configuringDynamicPage) return;
+    const updated = await pagesApi.setDynamicBinding(activeWorkspace.id, params.websiteId, configuringDynamicPage.id, input);
+    setPages((prev) => prev?.map((p) => (p.id === configuringDynamicPage.id ? { ...p, ...updated } : p)) ?? null);
+    setConfiguringDynamicPage(null);
   }
 
   if (error) {
@@ -246,6 +255,7 @@ export default function WebsiteOverviewPage() {
                 onEdit={() => setRenamingPage(page)}
                 onDuplicate={() => handleDuplicatePage(page)}
                 onToggleStatus={() => handleToggleStatus(page)}
+                onConfigureDynamic={() => setConfiguringDynamicPage(page)}
                 onDelete={() => setDeletingPage(page)}
               />
             ))}
@@ -268,6 +278,16 @@ export default function WebsiteOverviewPage() {
           initialSlug={renamingPage.slug}
           onClose={() => setRenamingPage(null)}
           onSave={(data) => handleRenamePage(renamingPage, data)}
+        />
+      )}
+
+      {configuringDynamicPage && (
+        <DynamicPageModal
+          workspaceId={activeWorkspace.id}
+          websiteId={website.id}
+          page={configuringDynamicPage}
+          onClose={() => setConfiguringDynamicPage(null)}
+          onSave={handleSaveDynamicBinding}
         />
       )}
 

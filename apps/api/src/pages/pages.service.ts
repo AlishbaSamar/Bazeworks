@@ -115,6 +115,105 @@ export class PagesService {
     return { id: pageId };
   }
 
+  async setDynamicBinding(
+    workspaceId: string,
+    websiteId: string,
+    pageId: string,
+    input: { isDynamic: boolean; collectionId?: string; slugField?: string },
+  ) {
+    await this.requirePageInWebsiteInWorkspace(workspaceId, websiteId, pageId);
+
+    if (!input.isDynamic) {
+      return this.prisma.page.update({
+        where: { id: pageId },
+        data: {
+          isDynamic: false,
+          dynamicCollectionId: null,
+          dynamicSlugField: null,
+        },
+      });
+    }
+
+    const collection = await this.prisma.collection.findUnique({
+      where: { id: input.collectionId },
+      include: { fields: true },
+    });
+    if (!collection || collection.websiteId !== websiteId) {
+      throw new NotFoundException('Collection not found in this website');
+    }
+    if (!collection.fields.some((f) => f.key === input.slugField)) {
+      throw new ForbiddenException(
+        "The slug field must be one of the collection's own fields",
+      );
+    }
+
+    return this.prisma.page.update({
+      where: { id: pageId },
+      data: {
+        isDynamic: true,
+        dynamicCollectionId: collection.id,
+        dynamicSlugField: input.slugField,
+      },
+    });
+  }
+
+  /**
+   * Resolves a path like "/blog/hello-world" to the dynamic Page whose slug
+   * is "/blog" and the PUBLISHED entry in its bound collection whose
+   * dynamicSlugField value is "hello-world". This is the same logic Day
+   * 11/12's preview and production rendering will call — it's authenticated
+   * for now because there's no public-facing site yet to call it without a
+   * session; that gap gets a deliberately public entry point later.
+   */
+  async resolveDynamicPage(
+    workspaceId: string,
+    websiteId: string,
+    userId: string,
+    path: string,
+  ) {
+    await this.requireMembership(workspaceId, userId);
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+
+    // Page slugs are stored with a leading slash — including "/" for the
+    // root page — so a root-bound dynamic page's entries live directly at
+    // "/entry-slug" with no second path segment. Splitting on the last "/"
+    // handles that case too: "/entry-slug" splits to pageSlug "" (normalized
+    // to "/" below) and entrySlug "entry-slug", same as "/blog/entry-slug"
+    // splits to pageSlug "/blog".
+    const trimmed = path.replace(/\/+$/, '') || '/';
+    const lastSlash = trimmed.lastIndexOf('/');
+    const entrySlug = trimmed.slice(lastSlash + 1);
+    if (!entrySlug) {
+      throw new NotFoundException('No dynamic page matches this path');
+    }
+    const pageSlug = trimmed.slice(0, lastSlash) || '/';
+
+    const page = await this.prisma.page.findUnique({
+      where: { websiteId_slug: { websiteId, slug: pageSlug } },
+    });
+    if (
+      !page ||
+      !page.isDynamic ||
+      !page.dynamicCollectionId ||
+      !page.dynamicSlugField
+    ) {
+      throw new NotFoundException('No dynamic page matches this path');
+    }
+
+    const entry = await this.prisma.collectionEntry.findFirst({
+      where: {
+        collectionId: page.dynamicCollectionId,
+        status: 'PUBLISHED',
+        data: { path: [page.dynamicSlugField], equals: entrySlug },
+      },
+    });
+    if (!entry) {
+      throw new NotFoundException('No published entry matches this slug');
+    }
+
+    return { page, entry };
+  }
+
   private async requireMembership(workspaceId: string, userId: string) {
     const membership = await this.prisma.workspaceMember.findUnique({
       where: { userId_workspaceId: { userId, workspaceId } },

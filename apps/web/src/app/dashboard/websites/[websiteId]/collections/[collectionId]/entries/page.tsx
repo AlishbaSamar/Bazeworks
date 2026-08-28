@@ -126,6 +126,12 @@ export default function CollectionEntriesPage() {
     }
   }
 
+  async function handleToggleStatus(entry: CollectionEntry) {
+    const nextStatus = entry.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
+    await collectionsApi.updateEntryStatus(activeWorkspace.id, params.websiteId, params.collectionId, entry.id, nextStatus);
+    await refetchCurrentPage();
+  }
+
   function goNext() {
     if (!nextCursor) return;
     setCursorHistory((prev) => {
@@ -256,6 +262,7 @@ export default function CollectionEntriesPage() {
                     fields={collection.fields}
                     canManage={canManage}
                     onEdit={() => setEditingEntry(entry)}
+                    onToggleStatus={() => handleToggleStatus(entry)}
                     onDelete={() => setDeletingEntry(entry)}
                   />
                 ))}

@@ -19,6 +19,7 @@ import {
   withGlobalFooterDefaults,
   withGlobalHeaderDefaults,
 } from "@/lib/global-components-panel";
+import { EditorRouteProvider } from "@/lib/editor-route-context";
 import type { NavbarProps, FooterProps } from "@/lib/puck-components/sections";
 
 const THEME_STYLE_TAG_ID = "bazeworks-site-theme-vars";
@@ -275,24 +276,26 @@ export default function PageEditor() {
   }
 
   return (
-    <ThemeEditProvider theme={theme} onChange={setTheme}>
-      <GlobalComponentsProvider header={header} footer={footer} onHeaderChange={setHeader} onFooterChange={setFooter}>
-        <Puck
-          config={puckConfig}
-          data={page.content}
-          headerTitle={page.name}
-          headerPath={page.slug}
-          height="100vh"
-          plugins={EDITOR_PLUGINS}
-          overrides={{
-            headerActions: () => (
-              <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
-            ),
-            drawer: SearchableDrawer,
-            fields: TabbedFields,
-          }}
-        />
-      </GlobalComponentsProvider>
-    </ThemeEditProvider>
+    <EditorRouteProvider workspaceId={params.workspaceId} websiteId={params.websiteId}>
+      <ThemeEditProvider theme={theme} onChange={setTheme}>
+        <GlobalComponentsProvider header={header} footer={footer} onHeaderChange={setHeader} onFooterChange={setFooter}>
+          <Puck
+            config={puckConfig}
+            data={page.content}
+            headerTitle={page.name}
+            headerPath={page.slug}
+            height="100vh"
+            plugins={EDITOR_PLUGINS}
+            overrides={{
+              headerActions: () => (
+                <EditorHeaderActions websiteId={params.websiteId} saveStatus={saveStatus} onSave={handleSave} />
+              ),
+              drawer: SearchableDrawer,
+              fields: TabbedFields,
+            }}
+          />
+        </GlobalComponentsProvider>
+      </ThemeEditProvider>
+    </EditorRouteProvider>
   );
 }

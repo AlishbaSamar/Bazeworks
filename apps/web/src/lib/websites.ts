@@ -9,6 +9,9 @@ export interface WebsitePage {
   name: string;
   slug: string;
   status: PageStatus;
+  isDynamic: boolean;
+  dynamicCollectionId: string | null;
+  dynamicSlugField: string | null;
   createdAt: string;
   updatedAt: string;
 }

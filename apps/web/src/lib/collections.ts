@@ -80,10 +80,13 @@ export interface FieldInput {
   relatedCollectionId?: string;
 }
 
+export type EntryStatus = "DRAFT" | "PUBLISHED";
+
 export interface CollectionEntry {
   id: string;
   collectionId: string;
   data: Record<string, unknown>;
+  status: EntryStatus;
   createdAt: string;
   updatedAt: string;
 }
@@ -97,6 +100,8 @@ export interface ListEntriesParams {
   cursor?: string;
   limit?: number;
   q?: string;
+  status?: EntryStatus;
+  order?: "asc" | "desc";
 }
 
 const TEXT_LIKE_FIELD_TYPES: FieldType[] = ["TEXT", "TEXTAREA", "RICH_TEXT", "EMAIL", "URL"];
@@ -114,6 +119,13 @@ export function getEntryLabel(fields: CollectionField[], entry: CollectionEntry)
   if (anyField) return String(entry.data[anyField.key]);
 
   return "Untitled entry";
+}
+
+export function getEntryImage(fields: CollectionField[], entry: CollectionEntry): string | null {
+  const imageField = fields.find(
+    (f) => f.type === "IMAGE" && typeof entry.data[f.key] === "string" && entry.data[f.key],
+  );
+  return imageField ? String(entry.data[imageField.key]) : null;
 }
 
 function base(workspaceId: string, websiteId: string) {
@@ -156,6 +168,8 @@ export const collectionsApi = {
     if (params?.cursor) search.set("cursor", params.cursor);
     if (params?.limit) search.set("limit", String(params.limit));
     if (params?.q) search.set("q", params.q);
+    if (params?.status) search.set("status", params.status);
+    if (params?.order) search.set("order", params.order);
     const qs = search.toString();
     return apiClient.get<EntriesPage>(
       `${base(workspaceId, websiteId)}/${collectionId}/entries${qs ? `?${qs}` : ""}`,
@@ -183,4 +197,15 @@ export const collectionsApi = {
     ),
   removeEntry: (workspaceId: string, websiteId: string, collectionId: string, entryId: string) =>
     apiClient.delete<{ id: string }>(`${base(workspaceId, websiteId)}/${collectionId}/entries/${entryId}`),
+  updateEntryStatus: (
+    workspaceId: string,
+    websiteId: string,
+    collectionId: string,
+    entryId: string,
+    status: EntryStatus,
+  ) =>
+    apiClient.patch<CollectionEntry>(
+      `${base(workspaceId, websiteId)}/${collectionId}/entries/${entryId}/status`,
+      { status },
+    ),
 };

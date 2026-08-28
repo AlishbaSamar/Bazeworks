@@ -1,8 +1,18 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { getEntryLabel, type CollectionEntry, type CollectionField } from "@/lib/collections";
+import { getEntryLabel, type CollectionEntry, type CollectionField, type EntryStatus } from "@/lib/collections";
 import { timeAgo } from "@/lib/format";
+
+const STATUS_LABEL: Record<EntryStatus, string> = {
+  DRAFT: "Draft",
+  PUBLISHED: "Published",
+};
+
+const STATUS_CLASSES: Record<EntryStatus, string> = {
+  DRAFT: "bg-surface-sunken text-muted-foreground border-border",
+  PUBLISHED: "bg-success-soft text-success border-success/20",
+};
 
 function summarize(fields: CollectionField[], entry: CollectionEntry, excludeKey?: string): string {
   const parts: string[] = [];
@@ -28,12 +38,14 @@ export function EntryRow({
   fields,
   canManage,
   onEdit,
+  onToggleStatus,
   onDelete,
 }: {
   entry: CollectionEntry;
   fields: CollectionField[];
   canManage: boolean;
   onEdit: () => void;
+  onToggleStatus: () => void;
   onDelete: () => void;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -61,6 +73,10 @@ export function EntryRow({
         {summary && <span className="mt-0.5 block truncate text-xs text-muted-foreground">{summary}</span>}
       </button>
 
+      <span className={`shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_CLASSES[entry.status]}`}>
+        {STATUS_LABEL[entry.status]}
+      </span>
+
       <span className="hidden shrink-0 text-xs text-muted-foreground sm:inline">Updated {timeAgo(entry.updatedAt)}</span>
 
       {canManage && (
@@ -87,6 +103,16 @@ export function EntryRow({
                 className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
               >
                 Edit
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onToggleStatus();
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
+              >
+                {entry.status === "PUBLISHED" ? "Unpublish" : "Publish"}
               </button>
               <div className="my-1 h-px bg-border" />
               <button

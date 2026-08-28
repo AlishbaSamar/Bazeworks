@@ -11,6 +11,9 @@ export interface Page {
   name: string;
   slug: string;
   status: PageStatus;
+  isDynamic: boolean;
+  dynamicCollectionId: string | null;
+  dynamicSlugField: string | null;
   createdAt: string;
   updatedAt: string;
   websiteId: string;
@@ -18,6 +21,17 @@ export interface Page {
 
 export interface PageWithContent extends Page {
   content: Data;
+}
+
+export interface DynamicBindingInput {
+  isDynamic: boolean;
+  collectionId?: string;
+  slugField?: string;
+}
+
+export interface ResolvedPage {
+  page: Page;
+  entry: { id: string; collectionId: string; data: Record<string, unknown>; status: PageStatus };
 }
 
 export const pagesApi = {
@@ -46,4 +60,13 @@ export const pagesApi = {
     apiClient.post<Page>(`/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}/duplicate`),
   remove: (workspaceId: string, websiteId: string, pageId: string) =>
     apiClient.delete<{ id: string }>(`/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}`),
+  setDynamicBinding: (workspaceId: string, websiteId: string, pageId: string, input: DynamicBindingInput) =>
+    apiClient.patch<Page>(
+      `/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}/dynamic`,
+      input,
+    ),
+  resolve: (workspaceId: string, websiteId: string, path: string) =>
+    apiClient.get<ResolvedPage>(
+      `/workspaces/${workspaceId}/websites/${websiteId}/pages/resolve?path=${encodeURIComponent(path)}`,
+    ),
 };

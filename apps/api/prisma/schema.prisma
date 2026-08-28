@@ -161,8 +161,17 @@ model Page {
   websiteId String
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
 
+  // A dynamic page renders one collection entry per URL — e.g. a page with
+  // slug "blog" and dynamicSlugField "slug" resolves "/blog/hello-world" by
+  // looking up the entry in dynamicCollection whose data.slug === "hello-world".
+  isDynamic          Boolean @default(false)
+  dynamicCollectionId String?
+  dynamicCollection   Collection? @relation(fields: [dynamicCollectionId], references: [id], onDelete: SetNull)
+  dynamicSlugField    String?
+
   @@unique([websiteId, slug])
   @@index([websiteId])
+  @@index([dynamicCollectionId])
   @@map("page")
 }
 
@@ -200,6 +209,10 @@ model Collection {
   // named separately from `fields` since both relations target Collection.
   incomingRelationFields CollectionField[] @relation("CollectionFieldRelation")
 
+  // Pages that render this collection's entries dynamically (e.g. a "blog" page
+  // bound to this collection renders /blog/[slug] for each of its entries).
+  dynamicPages Page[]
+
   @@unique([websiteId, slug])
   @@index([websiteId])
   @@map("collection")
@@ -229,16 +242,18 @@ model CollectionField {
 }
 
 model CollectionEntry {
-  id        String   @id @default(cuid())
-  data      Json     @default("{}")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        String     @id @default(cuid())
+  data      Json       @default("{}")
+  status    PageStatus @default(DRAFT)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   collectionId String
   collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
 
   @@index([collectionId])
   @@index([collectionId, createdAt])
+  @@index([collectionId, status, createdAt])
   @@map("collection_entry")
 }
 

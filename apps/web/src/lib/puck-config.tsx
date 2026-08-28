@@ -1,6 +1,7 @@
 import type { Config } from "@puckeditor/core";
 import { layoutComponents, layoutFieldTabs, type LayoutComponents } from "./puck-components/layout";
 import { sectionComponents, sectionFieldTabs, type SectionComponents } from "./puck-components/sections";
+import { dynamicComponents, dynamicFieldTabs, type DynamicComponents } from "./puck-components/dynamic";
 import { GlobalHeaderFooterWrapper } from "./global-components-panel";
 
 const ALIGN_OPTIONS = [
@@ -67,7 +68,8 @@ export type PuckComponents = {
   Divider: DividerProps;
   Spacer: SpacerProps;
 } & LayoutComponents &
-  SectionComponents;
+  SectionComponents &
+  DynamicComponents;
 
 const SPACING_PX: Record<DividerProps["spacing"], number> = {
   small: 12,
@@ -108,6 +110,7 @@ export const FIELD_TABS: Partial<Record<keyof PuckComponents, Partial<Record<Fie
   Spacer: { style: ["height"] },
   ...layoutFieldTabs,
   ...sectionFieldTabs,
+  ...dynamicFieldTabs,
 };
 
 export const puckConfig: Config<PuckComponents> = {
@@ -123,6 +126,10 @@ export const puckConfig: Config<PuckComponents> = {
     sections: {
       title: "Website Sections",
       components: ["Navbar", "Footer", "Hero", "Features", "Testimonials", "Pricing", "FAQ", "CTA", "ContactForm"],
+    },
+    dynamic: {
+      title: "Dynamic Content",
+      components: ["CollectionList", "CollectionItem", "RecentPosts", "RelatedPosts", "FeaturedContent"],
     },
   },
   components: {
@@ -325,6 +332,7 @@ export const puckConfig: Config<PuckComponents> = {
     },
     ...layoutComponents,
     ...sectionComponents,
+    ...dynamicComponents,
   },
   root: {
     render: ({ children }) => <GlobalHeaderFooterWrapper>{children}</GlobalHeaderFooterWrapper>,
