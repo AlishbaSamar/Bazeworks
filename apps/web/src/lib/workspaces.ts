@@ -14,6 +14,7 @@ export interface Workspace {
 
 export const workspacesApi = {
   list: () => apiClient.get<Workspace[]>("/workspaces"),
+  get: (workspaceId: string) => apiClient.get<Workspace>(`/workspaces/${workspaceId}`),
   create: (name: string) => apiClient.post<Workspace>("/workspaces", { name }),
 };
 

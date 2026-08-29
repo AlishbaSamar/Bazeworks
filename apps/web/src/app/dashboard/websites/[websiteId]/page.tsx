@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { FormBanner } from "@/components/ui/FormBanner";
@@ -11,11 +11,13 @@ import { RenamePageDialog } from "@/components/website/RenamePageDialog";
 import { DynamicPageModal } from "@/components/website/DynamicPageModal";
 import { SaveAsTemplateDialog } from "@/components/website/SaveAsTemplateDialog";
 import { PageSeoDialog } from "@/components/website/PageSeoDialog";
+import { PublishDialog } from "@/components/website/PublishDialog";
 import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
 import { pagesApi, type DynamicBindingInput, type Page } from "@/lib/pages";
 import { collectionsApi } from "@/lib/collections";
+import { publishingApi, type PublishStatus } from "@/lib/publishing";
 import { useWorkspaceContext } from "@/lib/workspace-context";
 import { timeAgo } from "@/lib/format";
 
@@ -45,9 +47,23 @@ export default function WebsiteOverviewPage() {
   const [configuringDynamicPage, setConfiguringDynamicPage] = useState<Page | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateNotice, setTemplateNotice] = useState<string | null>(null);
+  const [publishStatus, setPublishStatus] = useState<PublishStatus | null>(null);
+  const [showPublish, setShowPublish] = useState(false);
+  const [publishNotice, setPublishNotice] = useState<string | null>(null);
 
   const canManage = activeWorkspace.role !== "VIEWER";
   const previewHref = `/preview/${activeWorkspace.id}/${params.websiteId}`;
+
+  const refreshPublishStatus = useCallback(() => {
+    publishingApi
+      .status(activeWorkspace.id, params.websiteId)
+      .then(setPublishStatus)
+      .catch(() => {});
+  }, [activeWorkspace.id, params.websiteId]);
+
+  useEffect(() => {
+    refreshPublishStatus();
+  }, [refreshPublishStatus]);
 
   useEffect(() => {
     let cancelled = false;
@@ -169,8 +185,18 @@ export default function WebsiteOverviewPage() {
             >
               {STATUS_LABEL[website.status]}
             </span>
+            {publishStatus?.hasPendingChanges && (
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                Unpublished changes
+              </span>
+            )}
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">{website.slug}</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            {website.slug}
+            {publishStatus?.lastPublishedAt
+              ? ` · published ${timeAgo(publishStatus.lastPublishedAt)}`
+              : " · never published"}
+          </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -205,10 +231,21 @@ export default function WebsiteOverviewPage() {
               Save as template
             </Button>
           )}
-          <Button variant="secondary" className="w-auto px-4" disabled title="Coming Day 11">
-            Publish Draft
-          </Button>
-          <Button className="w-auto px-4" disabled title="Coming Day 12">
+          {canManage && (
+            <Button
+              className="w-auto px-4"
+              onClick={() => setShowPublish(true)}
+              disabled={publishStatus !== null && !publishStatus.hasPendingChanges}
+              title={
+                publishStatus && !publishStatus.hasPendingChanges
+                  ? "Nothing new to publish"
+                  : undefined
+              }
+            >
+              Publish
+            </Button>
+          )}
+          <Button variant="secondary" className="w-auto px-4" disabled title="Coming Day 12">
             Deploy
           </Button>
         </div>
@@ -217,6 +254,12 @@ export default function WebsiteOverviewPage() {
       {templateNotice && (
         <div className="mt-4">
           <FormBanner variant="success">{templateNotice}</FormBanner>
+        </div>
+      )}
+
+      {publishNotice && (
+        <div className="mt-4">
+          <FormBanner variant="success">{publishNotice}</FormBanner>
         </div>
       )}
 
@@ -350,6 +393,26 @@ export default function WebsiteOverviewPage() {
           websiteRobotsDefault={website.seo?.robots}
           onClose={() => setSeoPage(null)}
           onSave={handleSaveSeo}
+        />
+      )}
+
+      {showPublish && publishStatus && (
+        <PublishDialog
+          workspaceId={activeWorkspace.id}
+          websiteId={params.websiteId}
+          status={publishStatus}
+          onClose={() => setShowPublish(false)}
+          onPublished={(note) => {
+            setShowPublish(false);
+            setPublishNotice(
+              `Published${note ? ` — "${note}"` : ""}. Deploy to make it live.`,
+            );
+            refreshPublishStatus();
+            websitesApi
+              .get(activeWorkspace.id, params.websiteId)
+              .then(setWebsite)
+              .catch(() => {});
+          }}
         />
       )}
 

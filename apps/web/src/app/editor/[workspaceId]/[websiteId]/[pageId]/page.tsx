@@ -9,6 +9,7 @@ import { useSession } from "@/lib/auth-client";
 import { ApiError } from "@/lib/api-client";
 import { pagesApi, type PageWithContent } from "@/lib/pages";
 import { websitesApi } from "@/lib/websites";
+import { workspacesApi } from "@/lib/workspaces";
 import { puckConfig } from "@/lib/puck-config";
 import { SearchableDrawer, TabbedFields } from "@/lib/puck-overrides";
 import { DEFAULT_THEME, googleFontsHref, themeCssVarsToStyleText, withThemeDefaults, type Theme } from "@/lib/theme";
@@ -131,6 +132,24 @@ export default function PageEditor() {
       router.replace("/login");
     }
   }, [isPending, session, router]);
+
+  // Viewers can't edit — send them to the read-only preview instead of a
+  // canvas full of controls the server would reject anyway.
+  useEffect(() => {
+    if (!session) return;
+    let cancelled = false;
+    workspacesApi
+      .get(params.workspaceId)
+      .then((ws) => {
+        if (!cancelled && ws.role === "VIEWER") {
+          router.replace(`/preview/${params.workspaceId}/${params.websiteId}`);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [session, params.workspaceId, params.websiteId, router]);
 
   useEffect(() => {
     if (!session) return;

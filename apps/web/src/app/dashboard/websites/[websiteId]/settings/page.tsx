@@ -13,6 +13,8 @@ import { websitesApi, type Website, type WebsiteOverview, type WebsiteSeo } from
 import { ROBOTS_OPTIONS } from "@/lib/pages";
 import { uploadAsset } from "@/lib/media";
 import { apiKeysApi, type ApiKey, type ApiKeyWithSecret } from "@/lib/api-keys";
+import { publishingApi, type PublicationSummary } from "@/lib/publishing";
+import { timeAgo } from "@/lib/format";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:4000/api";
 
@@ -83,9 +85,7 @@ export default function WebsiteSettingsPage() {
       )}
       {tab === "Domain" && <DomainTab website={website} />}
       {tab === "Deployment" && (
-        <p className="rounded-xl border border-dashed border-border-strong px-4 py-10 text-center text-sm text-muted-foreground">
-          Deployment settings and status arrive with Vercel deployment (Day 12).
-        </p>
+        <DeploymentTab websiteId={website.id} workspaceId={activeWorkspace.id} />
       )}
       {tab === "API access" && (
         <ApiAccessTab websiteId={website.id} workspaceId={activeWorkspace.id} canManage={canManage} />
@@ -352,6 +352,61 @@ function DomainTab({ website }: { website: WebsiteOverview }) {
       <p className="text-xs text-muted-foreground">
         Custom domains are a later-phase feature. The default Vercel URL is assigned on first deploy (Day 12).
       </p>
+    </div>
+  );
+}
+
+function DeploymentTab({
+  websiteId,
+  workspaceId,
+}: {
+  websiteId: string;
+  workspaceId: string;
+}) {
+  const [history, setHistory] = useState<PublicationSummary[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    publishingApi
+      .history(workspaceId, websiteId)
+      .then(setHistory)
+      .catch((err) => setError(err instanceof ApiError ? err.message : "Couldn't load history."));
+  }, [workspaceId, websiteId]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      {error && <FormBanner variant="error">{error}</FormBanner>}
+      <p className="rounded-lg bg-surface-sunken px-4 py-3 text-sm text-muted-foreground">
+        Each publish creates an approved snapshot. Day 12&apos;s deploy builds the live site from the
+        most recent one — and can redeploy any earlier snapshot to roll back.
+      </p>
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+        <div className="border-b border-border px-4 py-2.5 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+          Publish history
+        </div>
+        {history === null ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">Loading…</p>
+        ) : history.length === 0 ? (
+          <p className="px-4 py-6 text-sm text-muted-foreground">Not published yet.</p>
+        ) : (
+          <ul className="divide-y divide-border">
+            {history.map((p, i) => (
+              <li key={p.id} className="flex items-center gap-3 px-4 py-3 text-sm">
+                <span className="font-mono text-xs text-muted-foreground">#{history.length - i}</span>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-foreground">{p.note || "No note"}</p>
+                  <p className="text-xs text-muted-foreground">{timeAgo(p.createdAt)}</p>
+                </div>
+                {i === 0 && (
+                  <span className="rounded-full bg-success-soft px-2 py-0.5 text-xs font-medium text-success">
+                    latest
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 }

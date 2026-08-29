@@ -137,6 +137,10 @@ model Website {
   // to SITE_BASE_URL until then.
   productionUrl String?
 
+  // Set on each successful publish. "Pending changes" = any page/website/
+  // collection-field updatedAt is newer than this (see PublishingService).
+  lastPublishedAt DateTime?
+
   archivedAt DateTime?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
@@ -147,14 +151,47 @@ model Website {
   ownerId String
   owner   User   @relation(fields: [ownerId], references: [id])
 
-  pages       Page[]
-  collections Collection[]
-  assets      Asset[]
-  apiKeys     ApiKey[]
+  pages        Page[]
+  collections  Collection[]
+  assets       Asset[]
+  apiKeys      ApiKey[]
+  publications Publication[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
   @@map("website")
+}
+
+/**
+ * A frozen snapshot of a website's structure at publish time (PRD §8.11).
+ * The live Page/Collection/Website rows stay editable as the working draft;
+ * preview renders the draft, and Day 12's production build renders the most
+ * recent Publication. Collection *entries* are not frozen here — they keep
+ * their own per-entry publish state and are read live at deploy time, so a
+ * 100k-entry collection doesn't bloat the snapshot (PRD §9.3).
+ */
+model Publication {
+  id          String   @id @default(cuid())
+  createdAt   DateTime @default(now())
+  note        String?
+  createdById String?
+
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  // [{ name, slug, status, order, content, isDynamic, dynamicCollectionSlug,
+  //    dynamicSlugField, seo }]
+  pages             Json
+  theme             Json
+  globalHeader      Json
+  globalFooter      Json
+  websiteSeo        Json
+  // [{ name, slug, fields: [{ name, key, type, required, options,
+  //    relatedCollectionSlug }] }]
+  collectionSchemas Json
+
+  @@index([websiteId, createdAt])
+  @@map("publication")
 }
 
 enum PageStatus {

@@ -219,8 +219,14 @@ export interface CollectionListProps {
   publishedOnly: boolean;
 }
 
+function SharedPreviewNotice() {
+  return <EmptyState message="Collection lists aren't shown in shared previews." />;
+}
+
 function CollectionListRender({ source, heading, limit, order, publishedOnly }: CollectionListProps) {
+  const { publicShare } = useEditorRoute();
   const { entries, fields, loading } = useEntries(source, { limit, order, publishedOnly });
+  if (publicShare) return <SharedPreviewNotice />;
   if (!source) return <EmptyState message="Choose a collection in the properties panel." />;
   return <CardGrid heading={heading} loading={loading} entries={entries} fields={fields} emptyMessage="No entries in this collection yet." />;
 }
@@ -234,7 +240,9 @@ export interface RecentPostsProps {
 }
 
 function RecentPostsRender({ source, heading, limit }: RecentPostsProps) {
+  const { publicShare } = useEditorRoute();
   const { entries, fields, loading } = useEntries(source, { limit, order: "desc", publishedOnly: true });
+  if (publicShare) return <SharedPreviewNotice />;
   if (!source) return <EmptyState message="Choose a collection in the properties panel." />;
   return <CardGrid heading={heading} loading={loading} entries={entries} fields={fields} emptyMessage="No published entries yet." />;
 }
@@ -251,7 +259,8 @@ export interface RelatedPostsProps {
 function RelatedPostsRender({ source, heading, limit, excludeEntry }: RelatedPostsProps) {
   // Fetch one extra so excluding the "preview against" entry still leaves `limit` cards.
   const { entries, fields, loading } = useEntries(source, { limit: limit + 1, order: "desc", publishedOnly: true });
-  const { previewEntry } = useEditorRoute();
+  const { previewEntry, publicShare } = useEditorRoute();
+  if (publicShare) return <SharedPreviewNotice />;
   if (!source) return <EmptyState message="Choose a collection in the properties panel." />;
   // On a resolved dynamic route the current entry is what we exclude; the
   // editor's "preview against" pick is only a stand-in for that.
@@ -268,8 +277,10 @@ export interface FeaturedContentProps {
 }
 
 function FeaturedContentRender({ heading, entries: picked }: FeaturedContentProps) {
+  const { publicShare } = useEditorRoute();
   const { entries, fields, loading } = useEntries(picked?.collectionId ?? "", {});
   const ids = picked?.entryIds ?? [];
+  if (publicShare) return <SharedPreviewNotice />;
   if (!picked?.collectionId) return <EmptyState message="Pick a collection and entries in the properties panel." />;
   const ordered = ids.map((id) => entries.find((e) => e.id === id)).filter((e): e is CollectionEntry => !!e);
   return <CardGrid heading={heading} loading={loading} entries={ordered} fields={fields} emptyMessage="Pick some entries to feature." />;
@@ -290,7 +301,29 @@ function CollectionItemRender({ entry: picked }: CollectionItemProps) {
   // editor falls back to the "preview entry" picked in the properties panel.
   const collectionId = previewEntry?.collectionId || picked?.collectionId || "";
   const entryId = previewEntry?.entryId || picked?.entryId || "";
-  const { entry, fields, loading } = useSingleEntry(collectionId, entryId);
+
+  // Public share: the resolved entry's data + fields come through context, so
+  // render directly without an authenticated fetch.
+  const inlineEntry =
+    previewEntry?.data && previewEntry?.fields
+      ? {
+          entry: {
+            id: entryId,
+            collectionId,
+            data: previewEntry.data,
+            status: "PUBLISHED" as const,
+            createdAt: "",
+            updatedAt: "",
+          },
+          fields: previewEntry.fields,
+        }
+      : null;
+
+  const fetched = useSingleEntry(inlineEntry ? "" : collectionId, inlineEntry ? "" : entryId);
+  const entry = inlineEntry?.entry ?? fetched.entry;
+  const fields = inlineEntry?.fields ?? fetched.fields;
+  const loading = inlineEntry ? false : fetched.loading;
+
   if (!collectionId || !entryId) {
     return <EmptyState message="Pick an entry to preview in the properties panel." />;
   }

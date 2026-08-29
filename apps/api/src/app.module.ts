@@ -18,6 +18,8 @@ import { MediaModule } from './media/media.module';
 import { SitemapModule } from './sitemap/sitemap.module';
 import { ApiKeysModule } from './api-keys/api-keys.module';
 import { HeadlessModule } from './headless/headless.module';
+import { PublishingModule } from './publishing/publishing.module';
+import { PreviewModule } from './preview/preview.module';
 
 @Module({
   imports: [
@@ -35,6 +37,8 @@ import { HeadlessModule } from './headless/headless.module';
     SitemapModule,
     ApiKeysModule,
     HeadlessModule,
+    PublishingModule,
+    PreviewModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
