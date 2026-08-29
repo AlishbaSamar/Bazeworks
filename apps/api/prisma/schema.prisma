@@ -133,13 +133,17 @@ model Website {
   logoUrl       String?
   faviconUrl    String?
   seo           Json    @default("{}")
-  // Filled by Day 12's Vercel deployment; sitemap/canonical URLs fall back
-  // to SITE_BASE_URL until then.
+  // The live Vercel deployment URL, set on the first successful deploy.
+  // sitemap.xml / canonical URLs fall back to SITE_BASE_URL until then.
   productionUrl String?
 
   // Set on each successful publish. "Pending changes" = any page/website/
   // collection-field updatedAt is newer than this (see PublishingService).
   lastPublishedAt DateTime?
+
+  // Which Publication the public site currently renders. "Deploy" points this
+  // at the newest publication; "roll back" points it at an older one.
+  livePublicationId String?
 
   archivedAt DateTime?
   createdAt  DateTime  @default(now())
@@ -156,6 +160,7 @@ model Website {
   assets       Asset[]
   apiKeys      ApiKey[]
   publications Publication[]
+  deployments  Deployment[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -190,8 +195,47 @@ model Publication {
   //    relatedCollectionSlug }] }]
   collectionSchemas Json
 
+  deployments Deployment[]
+
   @@index([websiteId, createdAt])
   @@map("publication")
+}
+
+enum DeploymentStatus {
+  QUEUED
+  BUILDING
+  DEPLOYING
+  READY
+  FAILED
+  CANCELLED
+}
+
+/**
+ * One Vercel deployment of the public site renderer, pinned to the
+ * Publication snapshot it serves (PRD §8.12). `status` is our own lifecycle,
+ * refreshed lazily from Vercel's REST API while non-terminal.
+ */
+model Deployment {
+  id                 String           @id @default(cuid())
+  status             DeploymentStatus @default(QUEUED)
+  vercelDeploymentId String?
+  url                String?
+  errorMessage       String?
+  buildStartedAt     DateTime?
+  readyAt            DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  publicationId String
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  initiatedById String?
+
+  @@index([websiteId, createdAt])
+  @@map("deployment")
 }
 
 enum PageStatus {

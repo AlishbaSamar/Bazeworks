@@ -9,6 +9,10 @@ node_modules/
 # Next.js
 apps/web/.next/
 apps/web/out/
+apps/site/.next/
+apps/site/out/
+apps/site/AGENTS.md
+apps/site/CLAUDE.md
 
 # NestJS
 apps/api/dist/
@@ -19,9 +23,11 @@ apps/api/dist/
 .env.*.local
 apps/web/.env*
 apps/api/.env*
+apps/site/.env*
 !.env.example
 !apps/web/.env.example
 !apps/api/.env.example
+!apps/site/.env.example
 
 # Prisma
 apps/api/prisma/*.db

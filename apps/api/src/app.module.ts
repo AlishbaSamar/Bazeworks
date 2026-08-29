@@ -20,6 +20,8 @@ import { ApiKeysModule } from './api-keys/api-keys.module';
 import { HeadlessModule } from './headless/headless.module';
 import { PublishingModule } from './publishing/publishing.module';
 import { PreviewModule } from './preview/preview.module';
+import { DeploymentsModule } from './deployments/deployments.module';
+import { RenderModule } from './render/render.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { PreviewModule } from './preview/preview.module';
     HeadlessModule,
     PublishingModule,
     PreviewModule,
+    DeploymentsModule,
+    RenderModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

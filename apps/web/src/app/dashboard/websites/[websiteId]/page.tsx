@@ -12,6 +12,7 @@ import { DynamicPageModal } from "@/components/website/DynamicPageModal";
 import { SaveAsTemplateDialog } from "@/components/website/SaveAsTemplateDialog";
 import { PageSeoDialog } from "@/components/website/PageSeoDialog";
 import { PublishDialog } from "@/components/website/PublishDialog";
+import { DeploymentPanel } from "@/components/website/DeploymentPanel";
 import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
@@ -245,9 +246,6 @@ export default function WebsiteOverviewPage() {
               Publish
             </Button>
           )}
-          <Button variant="secondary" className="w-auto px-4" disabled title="Coming Day 12">
-            Deploy
-          </Button>
         </div>
       </div>
 
@@ -271,9 +269,17 @@ export default function WebsiteOverviewPage() {
               <dt className="text-muted-foreground">Environment</dt>
               <dd className="font-medium text-foreground">{STATUS_LABEL[website.status]}</dd>
             </div>
-            <div className="flex justify-between border-b border-border pb-2.5">
-              <dt className="text-muted-foreground">Domain</dt>
-              <dd className="font-medium text-foreground">—</dd>
+            <div className="flex justify-between gap-3 border-b border-border pb-2.5">
+              <dt className="text-muted-foreground">Live URL</dt>
+              <dd className="min-w-0 truncate font-medium text-foreground">
+                {website.productionUrl ? (
+                  <a href={website.productionUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">
+                    {website.productionUrl.replace(/^https?:\/\//, "")}
+                  </a>
+                ) : (
+                  "—"
+                )}
+              </dd>
             </div>
             <div className="flex justify-between border-b border-border pb-2.5">
               <dt className="text-muted-foreground">Last Modified</dt>
@@ -313,6 +319,19 @@ export default function WebsiteOverviewPage() {
             <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Media assets</p>
           </div>
         </div>
+      </div>
+
+      <div className="mt-4">
+        <DeploymentPanel
+          workspaceId={activeWorkspace.id}
+          websiteId={params.websiteId}
+          canDeploy={activeWorkspace.role === "OWNER" || activeWorkspace.role === "ADMIN"}
+          hasPublication={Boolean(publishStatus?.lastPublication)}
+          productionUrl={website.productionUrl}
+          onProductionUrl={(url) =>
+            setWebsite((prev) => (prev ? { ...prev, productionUrl: url } : prev))
+          }
+        />
       </div>
 
       <div className="mt-4 rounded-xl border border-border bg-surface p-5 shadow-sm">
