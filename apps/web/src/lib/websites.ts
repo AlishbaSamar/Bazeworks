@@ -1,8 +1,23 @@
 import { apiClient } from "./api-client";
 import type { Theme } from "./theme";
-import type { PageStatus } from "./pages";
+import type { PageStatus, RobotsDirective } from "./pages";
 
 export type WebsiteStatus = "DRAFT" | "LIVE";
+
+export interface WebsiteSeo {
+  description?: string;
+  ogImage?: string;
+  robots?: RobotsDirective;
+  indexable?: boolean;
+  titleTemplate?: string;
+}
+
+export interface WebsiteIdentityInput {
+  name?: string;
+  slug?: string;
+  logoUrl?: string;
+  faviconUrl?: string;
+}
 
 export interface WebsitePage {
   id: string;
@@ -24,6 +39,10 @@ export interface Website {
   theme: Partial<Theme>;
   globalHeader: Record<string, unknown>;
   globalFooter: Record<string, unknown>;
+  logoUrl: string | null;
+  faviconUrl: string | null;
+  seo: WebsiteSeo;
+  productionUrl: string | null;
   archivedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -49,6 +68,10 @@ export const websitesApi = {
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}`, { name }),
   updateTheme: (workspaceId: string, websiteId: string, theme: Theme) =>
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/theme`, theme),
+  updateSeo: (workspaceId: string, websiteId: string, seo: WebsiteSeo) =>
+    apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/seo`, seo),
+  updateIdentity: (workspaceId: string, websiteId: string, input: WebsiteIdentityInput) =>
+    apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/identity`, input),
   updateGlobalHeader: (workspaceId: string, websiteId: string, props: object) =>
     apiClient.patch<Website>(`/workspaces/${workspaceId}/websites/${websiteId}/global-header`, { props }),
   updateGlobalFooter: (workspaceId: string, websiteId: string, props: object) =>

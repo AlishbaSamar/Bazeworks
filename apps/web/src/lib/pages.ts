@@ -3,6 +3,24 @@ import type { Data } from "@puckeditor/core";
 
 export type PageStatus = "DRAFT" | "PUBLISHED";
 
+export const ROBOTS_OPTIONS = [
+  "index,follow",
+  "noindex,follow",
+  "index,nofollow",
+  "noindex,nofollow",
+] as const;
+export type RobotsDirective = (typeof ROBOTS_OPTIONS)[number];
+
+export interface PageSeo {
+  title?: string;
+  description?: string;
+  canonicalUrl?: string;
+  robots?: RobotsDirective;
+  ogTitle?: string;
+  ogDescription?: string;
+  ogImage?: string;
+}
+
 export const PAGE_TYPES = ["blank", "home", "about", "services", "pricing", "contact", "blog"] as const;
 export type PageType = (typeof PAGE_TYPES)[number];
 
@@ -11,6 +29,7 @@ export interface Page {
   name: string;
   slug: string;
   status: PageStatus;
+  seo?: PageSeo;
   isDynamic: boolean;
   dynamicCollectionId: string | null;
   dynamicSlugField: string | null;
@@ -55,6 +74,11 @@ export const pagesApi = {
     apiClient.patch<Page>(
       `/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}/status`,
       { status },
+    ),
+  updateSeo: (workspaceId: string, websiteId: string, pageId: string, seo: PageSeo) =>
+    apiClient.patch<Page>(
+      `/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}/seo`,
+      seo,
     ),
   duplicate: (workspaceId: string, websiteId: string, pageId: string) =>
     apiClient.post<Page>(`/workspaces/${workspaceId}/websites/${websiteId}/pages/${pageId}/duplicate`),

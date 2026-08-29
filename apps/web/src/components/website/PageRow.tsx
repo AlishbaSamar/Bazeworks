@@ -20,6 +20,7 @@ export function PageRow({
   editorHref,
   canManage,
   onEdit,
+  onEditSeo,
   onDuplicate,
   onToggleStatus,
   onConfigureDynamic,
@@ -29,6 +30,7 @@ export function PageRow({
   editorHref: string;
   canManage: boolean;
   onEdit: () => void;
+  onEditSeo: () => void;
   onDuplicate: () => void;
   onToggleStatus: () => void;
   onConfigureDynamic: () => void;
@@ -102,6 +104,16 @@ export function PageRow({
                 className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
               >
                 Edit name & slug
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setMenuOpen(false);
+                  onEditSeo();
+                }}
+                className="block w-full px-3 py-2 text-left text-sm text-foreground transition-colors hover:bg-surface-sunken"
+              >
+                SEO settings…
               </button>
               <button
                 type="button"

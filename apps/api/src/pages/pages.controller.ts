@@ -16,6 +16,7 @@ import { RenamePageDto } from './dto/rename-page.dto';
 import { UpdatePageStatusDto } from './dto/update-page-status.dto';
 import { UpdatePageContentDto } from './dto/update-page-content.dto';
 import { UpdatePageDynamicDto } from './dto/update-page-dynamic.dto';
+import { UpdatePageSeoDto } from './dto/update-page-seo.dto';
 import { WorkspaceRoleGuard } from '../workspaces/guards/workspace-role.guard';
 import { RequireWorkspaceRole } from '../workspaces/decorators/require-workspace-role.decorator';
 
@@ -98,6 +99,18 @@ export class PagesController {
     @Body() dto: RenamePageDto,
   ) {
     return this.pagesService.rename(workspaceId, websiteId, pageId, dto);
+  }
+
+  @Patch(':pageId/seo')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  updateSeo(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Param('pageId') pageId: string,
+    @Body() dto: UpdatePageSeoDto,
+  ) {
+    return this.pagesService.updateSeo(workspaceId, websiteId, pageId, dto);
   }
 
   @Patch(':pageId/status')

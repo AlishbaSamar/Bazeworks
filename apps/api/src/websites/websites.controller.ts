@@ -14,6 +14,8 @@ import { CreateWebsiteDto } from './dto/create-website.dto';
 import { RenameWebsiteDto } from './dto/rename-website.dto';
 import { UpdateThemeDto } from './dto/update-theme.dto';
 import { UpdateGlobalComponentDto } from './dto/update-global-component.dto';
+import { UpdateWebsiteSeoDto } from './dto/update-website-seo.dto';
+import { UpdateWebsiteIdentityDto } from './dto/update-website-identity.dto';
 import { WorkspaceRoleGuard } from '../workspaces/guards/workspace-role.guard';
 import { RequireWorkspaceRole } from '../workspaces/decorators/require-workspace-role.decorator';
 
@@ -77,6 +79,28 @@ export class WebsitesController {
     @Body() dto: UpdateThemeDto,
   ) {
     return this.websitesService.updateTheme(workspaceId, websiteId, dto);
+  }
+
+  @Patch(':websiteId/seo')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  updateSeo(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Body() dto: UpdateWebsiteSeoDto,
+  ) {
+    return this.websitesService.updateSeo(workspaceId, websiteId, dto);
+  }
+
+  @Patch(':websiteId/identity')
+  @UseGuards(WorkspaceRoleGuard)
+  @RequireWorkspaceRole('OWNER', 'ADMIN', 'EDITOR')
+  updateIdentity(
+    @Param('workspaceId') workspaceId: string,
+    @Param('websiteId') websiteId: string,
+    @Body() dto: UpdateWebsiteIdentityDto,
+  ) {
+    return this.websitesService.updateIdentity(workspaceId, websiteId, dto);
   }
 
   @Patch(':websiteId/global-header')

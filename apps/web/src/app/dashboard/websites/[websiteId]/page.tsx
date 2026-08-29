@@ -10,6 +10,7 @@ import { CreatePageModal } from "@/components/website/CreatePageModal";
 import { RenamePageDialog } from "@/components/website/RenamePageDialog";
 import { DynamicPageModal } from "@/components/website/DynamicPageModal";
 import { SaveAsTemplateDialog } from "@/components/website/SaveAsTemplateDialog";
+import { PageSeoDialog } from "@/components/website/PageSeoDialog";
 import { PageRow } from "@/components/website/PageRow";
 import { ApiError } from "@/lib/api-client";
 import { websitesApi, type WebsiteOverview } from "@/lib/websites";
@@ -39,6 +40,7 @@ export default function WebsiteOverviewPage() {
 
   const [showCreatePage, setShowCreatePage] = useState(false);
   const [renamingPage, setRenamingPage] = useState<Page | null>(null);
+  const [seoPage, setSeoPage] = useState<Page | null>(null);
   const [deletingPage, setDeletingPage] = useState<Page | null>(null);
   const [configuringDynamicPage, setConfiguringDynamicPage] = useState<Page | null>(null);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
@@ -104,6 +106,13 @@ export default function WebsiteOverviewPage() {
     const nextStatus = page.status === "PUBLISHED" ? "DRAFT" : "PUBLISHED";
     const updated = await pagesApi.updateStatus(activeWorkspace.id, params.websiteId, page.id, nextStatus);
     setPages((prev) => prev?.map((p) => (p.id === page.id ? { ...p, ...updated } : p)) ?? null);
+  }
+
+  async function handleSaveSeo(seo: NonNullable<Page["seo"]>) {
+    if (!seoPage) return;
+    const updated = await pagesApi.updateSeo(activeWorkspace.id, params.websiteId, seoPage.id, seo);
+    setPages((prev) => prev?.map((p) => (p.id === seoPage.id ? { ...p, ...updated } : p)) ?? null);
+    setSeoPage(null);
   }
 
   async function handleDeletePage() {
@@ -174,6 +183,18 @@ export default function WebsiteOverviewPage() {
               <path d="M10 4c-3.6 0-6.7 2.1-8 5 1.3 2.9 4.4 5 8 5s6.7-2.1 8-5c-1.3-2.9-4.4-5-8-5zm0 8a3 3 0 110-6 3 3 0 010 6z" />
             </svg>
             Preview
+          </Link>
+          <Link
+            href={`/dashboard/websites/${params.websiteId}/media`}
+            className="inline-flex h-9 w-auto items-center justify-center rounded-md border border-border bg-white px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-border-strong hover:bg-background"
+          >
+            Media
+          </Link>
+          <Link
+            href={`/dashboard/websites/${params.websiteId}/settings`}
+            className="inline-flex h-9 w-auto items-center justify-center rounded-md border border-border bg-white px-4 text-sm font-medium text-foreground shadow-sm transition-colors hover:border-border-strong hover:bg-background"
+          >
+            Settings
           </Link>
           {canManage && (
             <Button
@@ -280,6 +301,7 @@ export default function WebsiteOverviewPage() {
                 editorHref={`/editor/${activeWorkspace.id}/${website.id}/${page.id}`}
                 canManage={canManage}
                 onEdit={() => setRenamingPage(page)}
+                onEditSeo={() => setSeoPage(page)}
                 onDuplicate={() => handleDuplicatePage(page)}
                 onToggleStatus={() => handleToggleStatus(page)}
                 onConfigureDynamic={() => setConfiguringDynamicPage(page)}
@@ -315,6 +337,19 @@ export default function WebsiteOverviewPage() {
           page={configuringDynamicPage}
           onClose={() => setConfiguringDynamicPage(null)}
           onSave={handleSaveDynamicBinding}
+        />
+      )}
+
+      {seoPage && (
+        <PageSeoDialog
+          key={seoPage.id}
+          pageName={seoPage.name}
+          pageSlug={seoPage.slug}
+          siteBaseUrl={website.productionUrl ?? previewHref}
+          initialSeo={seoPage.seo ?? {}}
+          websiteRobotsDefault={website.seo?.robots}
+          onClose={() => setSeoPage(null)}
+          onSave={handleSaveSeo}
         />
       )}
 

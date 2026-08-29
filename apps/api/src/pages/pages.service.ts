@@ -88,6 +88,26 @@ export class PagesService {
     });
   }
 
+  async updateSeo(
+    workspaceId: string,
+    websiteId: string,
+    pageId: string,
+    seo: object,
+  ) {
+    await this.requirePageInWebsiteInWorkspace(workspaceId, websiteId, pageId);
+    // Drop empty strings so a cleared field falls back to the website
+    // default / page name at render time rather than overriding with "".
+    const cleaned = Object.fromEntries(
+      Object.entries(seo as Record<string, unknown>).filter(
+        ([, v]) => v !== '' && v != null,
+      ),
+    );
+    return this.prisma.page.update({
+      where: { id: pageId },
+      data: { seo: cleaned as Prisma.InputJsonValue },
+    });
+  }
+
   async duplicate(workspaceId: string, websiteId: string, pageId: string) {
     const source = await this.requirePageInWebsiteInWorkspace(
       workspaceId,

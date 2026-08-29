@@ -126,9 +126,20 @@ model Website {
   theme        Json          @default("{}")
   globalHeader Json          @default("{}")
   globalFooter Json          @default("{}")
-  archivedAt   DateTime?
-  createdAt    DateTime      @default(now())
-  updatedAt    DateTime      @updatedAt
+
+  // Identity + search-visibility settings (PRD §8.3, §8.13). `seo` holds the
+  // website-level SEO defaults: { description, ogImage, robots, indexable,
+  // titleTemplate }.
+  logoUrl       String?
+  faviconUrl    String?
+  seo           Json    @default("{}")
+  // Filled by Day 12's Vercel deployment; sitemap/canonical URLs fall back
+  // to SITE_BASE_URL until then.
+  productionUrl String?
+
+  archivedAt DateTime?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
 
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
@@ -138,6 +149,8 @@ model Website {
 
   pages       Page[]
   collections Collection[]
+  assets      Asset[]
+  apiKeys     ApiKey[]
 
   @@unique([workspaceId, slug])
   @@index([workspaceId])
@@ -161,6 +174,11 @@ model Page {
 
   websiteId String
   website   Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+
+  // Per-page SEO (PRD §8.13): { title, description, canonicalUrl, robots,
+  // ogTitle, ogDescription, ogImage }. Empty keys fall back to the website
+  // defaults / page name at render time.
+  seo Json @default("{}")
 
   // A dynamic page renders one collection entry per URL — e.g. a page with
   // slug "blog" and dynamicSlugField "slug" resolves "/blog/hello-world" by
@@ -332,4 +350,56 @@ model TemplateCollection {
 
   @@unique([templateId, slug])
   @@map("template_collection")
+}
+
+enum AssetKind {
+  IMAGE
+  VIDEO
+  DOCUMENT
+}
+
+model Asset {
+  id         String    @id @default(cuid())
+  kind       AssetKind
+  provider   String    @default("cloudinary")
+  externalId String // provider handle (Cloudinary public_id) — used to delete
+  url        String // canonical delivery URL
+  filename   String
+  mimeType   String
+  bytes      Int
+  width      Int?
+  height     Int?
+  alt        String    @default("")
+
+  websiteId   String
+  website     Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  createdById String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([websiteId, createdAt])
+  @@index([websiteId, kind])
+  @@map("asset")
+}
+
+model ApiKey {
+  id         String    @id @default(cuid())
+  name       String
+  // First 8 chars of the key, shown in the UI so a key is identifiable
+  // without exposing the secret.
+  prefix     String    @unique
+  // sha256 of the full key — the plaintext is shown once at creation only.
+  hashedKey  String
+  lastUsedAt DateTime?
+  revokedAt  DateTime?
+
+  websiteId   String
+  website     Website @relation(fields: [websiteId], references: [id], onDelete: Cascade)
+  createdById String?
+
+  createdAt DateTime @default(now())
+
+  @@index([websiteId])
+  @@map("api_key")
 }

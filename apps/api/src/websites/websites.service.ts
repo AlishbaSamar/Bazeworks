@@ -1,4 +1,5 @@
 import {
+  ConflictException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -322,6 +323,57 @@ export class WebsitesService {
     return this.prisma.website.update({
       where: { id: websiteId },
       data: { theme },
+    });
+  }
+
+  async updateSeo(workspaceId: string, websiteId: string, seo: object) {
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+    const cleaned = Object.fromEntries(
+      Object.entries(seo as Record<string, unknown>).filter(
+        ([, v]) => v !== '' && v != null,
+      ),
+    );
+    return this.prisma.website.update({
+      where: { id: websiteId },
+      data: { seo: cleaned as Prisma.InputJsonValue },
+    });
+  }
+
+  async updateIdentity(
+    workspaceId: string,
+    websiteId: string,
+    input: {
+      name?: string;
+      slug?: string;
+      logoUrl?: string;
+      faviconUrl?: string;
+    },
+  ) {
+    await this.requireWebsiteInWorkspace(workspaceId, websiteId);
+
+    if (input.slug) {
+      const clash = await this.prisma.website.findUnique({
+        where: { workspaceId_slug: { workspaceId, slug: input.slug } },
+      });
+      if (clash && clash.id !== websiteId) {
+        throw new ConflictException(
+          'Another website in this workspace already uses that slug.',
+        );
+      }
+    }
+
+    return this.prisma.website.update({
+      where: { id: websiteId },
+      data: {
+        ...(input.name !== undefined && { name: input.name }),
+        ...(input.slug !== undefined && { slug: input.slug }),
+        ...(input.logoUrl !== undefined && {
+          logoUrl: input.logoUrl || null,
+        }),
+        ...(input.faviconUrl !== undefined && {
+          faviconUrl: input.faviconUrl || null,
+        }),
+      },
     });
   }
 

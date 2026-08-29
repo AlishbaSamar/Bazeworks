@@ -14,6 +14,10 @@ import { WebsitesModule } from './websites/websites.module';
 import { TemplatesModule } from './templates/templates.module';
 import { PagesModule } from './pages/pages.module';
 import { CollectionsModule } from './collections/collections.module';
+import { MediaModule } from './media/media.module';
+import { SitemapModule } from './sitemap/sitemap.module';
+import { ApiKeysModule } from './api-keys/api-keys.module';
+import { HeadlessModule } from './headless/headless.module';
 
 @Module({
   imports: [
@@ -27,6 +31,10 @@ import { CollectionsModule } from './collections/collections.module';
     TemplatesModule,
     PagesModule,
     CollectionsModule,
+    MediaModule,
+    SitemapModule,
+    ApiKeysModule,
+    HeadlessModule,
   ],
   controllers: [AppController],
   providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],

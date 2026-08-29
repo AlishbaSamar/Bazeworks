@@ -21,6 +21,7 @@ interface Resolved {
   content: Data;
   pageName: string;
   pageSlug: string;
+  seoTitle?: string;
   isDynamicTemplate: boolean;
   previewEntry: PreviewEntryRef | null;
 }
@@ -70,6 +71,7 @@ export default function PreviewPage() {
             content: full.content,
             pageName: full.name,
             pageSlug: full.slug,
+            seoTitle: full.seo?.title,
             isDynamicTemplate: full.isDynamic,
             previewEntry: null,
           });
@@ -84,6 +86,7 @@ export default function PreviewPage() {
           content: page.content,
           pageName: page.name,
           pageSlug: normalized,
+          seoTitle: page.seo?.title,
           isDynamicTemplate: true,
           previewEntry: { collectionId: entry.collectionId, entryId: entry.id },
         });
@@ -101,6 +104,13 @@ export default function PreviewPage() {
       cancelled = true;
     };
   }, [session, workspaceId, websiteId, path]);
+
+  useEffect(() => {
+    if (!resolved) return;
+    const base = resolved.seoTitle || resolved.pageName;
+    const template = website?.seo?.titleTemplate;
+    document.title = template?.includes("%s") ? template.replace("%s", base) : base;
+  }, [resolved, website?.seo?.titleTemplate]);
 
   const theme = useMemo(
     () => (website ? withThemeDefaults(website.theme) : null),
